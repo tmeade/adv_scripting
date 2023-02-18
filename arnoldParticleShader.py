@@ -1,4 +1,6 @@
 import maya.cmds as mc
+import logging
+logging.getLogger(__name__)
 
 def create_aiStandardSurface_for_particleShape(
                                                 particle_node=mc.ls(selection=True),
@@ -16,8 +18,9 @@ def create_aiStandardSurface_for_particleShape(
     '''
     # Validate selection
     if len(particle_node) == 0:
-        print('Nothing Selected')
+        logging.error('Nothing is selected')
         return
+
 
     # Validade particle type
     shapes = mc.listRelatives(particle_node, shapes=True)
@@ -25,6 +28,7 @@ def create_aiStandardSurface_for_particleShape(
     if shapes:
         particle_shape_node = shapes[0]
 
+    logging.debug('Particle shpae node: {}'.format(particle_shape_node))
     # Create 3 nodes:
     # Particle Sampler Info
     particle_sampler_info = mc.createNode('particleSamplerInfo', name='particleAiSamplerInfo')
