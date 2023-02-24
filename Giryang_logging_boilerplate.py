@@ -21,10 +21,13 @@ handlers[1].setFormatter(formatter)
 #handler = logging.FileHandler('C:/temp/logtest.log')
 
 # These are the logging level  messages
-def test():
-    logger = logging.getLogger(__name__)
-    logger.debug('Debug stuff')
-    logger.info('This is info')
-    logger.warning('This is a warning')
-    logger.error('Error this!')
-    logger.critical('CRITICAL')
+import logging
+logger = logging.getLogger(__name__)
+
+
+root.logger = logging.getLogger(__name__)
+root.logger.debug('Debug stuff')
+root.logger.info('This is info')
+root.logger.warning('This is a warning')
+root.logger.error('Error this!')
+root.logger.critical('CRITICAL')
