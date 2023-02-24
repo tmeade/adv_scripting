@@ -5,6 +5,7 @@ import logging
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.ERROR)
 
+#comment
 # Set a formatter
 formatter = logging.Formatter('%(levelname)s - %(module)s - %(funcName)s - %(message)s')
 
