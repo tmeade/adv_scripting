@@ -19,7 +19,7 @@ handlers[1].setFormatter(formatter)
 # This will create another stream that outputs to a file
 #handler = logging.FileHandler('C:/temp/logtest.log')
 
-
+# These are the logging level  messages
 def test():
     logger = logging.getLogger(__name__)
     logger.debug('Debug stuff')
