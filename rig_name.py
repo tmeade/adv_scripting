@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 VALID_SIDE_NAMES = ['lt', 'rt', 'ctr']
 VALID_REGION_NAMES = ['front', 'rear', 'middle', 'upper', 'lower']
 VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver']
-VALID_RIG_TYPES = ['ctrl', 'offest', 'sdk', 'handle', 'loc', 'jnt', 'geo', 'constraint']
+VALID_RIG_TYPES = ['ctrl', 'offest', 'sdk', 'handle', 'loc', 'jnt', 'geo', 'constraint', 'grp']
 VALID_MAYA_TYPES = mc.ls(nodeTypes=True)
 
 class NameBase():
@@ -51,26 +51,67 @@ class Side(NameBase):
     def output(self):
         self.name = self.name.lower()
 
+
 # Jodi
 class Position(NameBase):
     pass
+
 
 # Dayz
 class Region(NameBase):
     pass
 
-#Giryang
+
+# Giryang
 class Element(NameBase):
     pass
 
-#Jessica
+
+# Jessica
 class ControlType(NameBase):
     pass
 
-#Hari
+
+# Hari
 class RigType(NameBase):
     pass
 
-#Thomas
+
+# Thomas
 class MayaType(NameBase):
     pass
+
+
+class RigName(NameBase):
+    def __init__(
+                self,
+                full_name=None,
+                side=None,
+                region=None,
+                element=None,
+                control_type=None,
+                rig_type=None,
+                maya_type=None,
+                position=None
+                ):
+        self.full_name = full_name
+        self.side = side
+        self.region = region
+        self.element = element
+        self.control_type = control_type
+        self.rig_type = rig_type
+        self.maya_type = maya_type
+        self.position = position
+
+    def validate(self):
+        # First check if full_name is specified and if so, break it up into individual segments.
+        # Potentially allow 'none' as a type if not applicable
+        #
+        # Check type of each variable.  If NameBase then continue, otherwise instantiate the name
+        pass
+
+    def output(self):
+        # Construct the string for entire object name.
+        #
+        # Allow side, region, position
+        pass
