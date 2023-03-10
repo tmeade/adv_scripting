@@ -77,7 +77,16 @@ class Element(NameBase):
 
 # Jessica
 class ControlType(NameBase):
-    pass
+    def __init__(self, name):
+        NameBase.__init__(self, name)
+
+    def validate(self):
+        if self.name not in VALID_CONTROL_TYPES:
+            logger.error('Control types must match: {}'.format(VALID_CONTROL_TYPES))
+            return
+
+    def output(self):
+        self.name = self.name.lower()
 
 
 # Hari
