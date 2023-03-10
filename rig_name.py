@@ -11,6 +11,8 @@ VALID_REGION_NAMES = ['front', 'rear', 'middle', 'upper', 'lower']
 VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver']
 VALID_RIG_TYPES = ['ctrl', 'offest', 'sdk', 'handle', 'loc', 'jnt', 'geo', 'constraint', 'grp']
 VALID_MAYA_TYPES = mc.ls(nodeTypes=True)
+#VALID_POSITION_TYPES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
 
 class NameBase():
     '''
@@ -56,9 +58,20 @@ class Side(NameBase):
 
 
 # Jodi
-class Position(NameBase):
-    pass
 
+class Position(NameBase):
+    def __init__(self, name):
+        NameBase.__init__(self, name)
+
+        def validate(self):
+            if not isinstance(self, int):
+                logger.error(f"{self} should be a positive number")
+                return
+
+        def output(self):
+            return
+
+        #not sure with the Position. Should I add position in constants first?
 
 # Dayz
 class Region(NameBase):
