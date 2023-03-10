@@ -59,7 +59,15 @@ class Position(NameBase):
 
 # Dayz
 class Region(NameBase):
-    pass
+    def __init__(self, name):
+        NameBase.__init__(self, name)
+
+    def validate(self):
+        if self.name not in VALID_REGION_NAMES:
+            logger.error('Region name must match: {}'.format(VALID_REGION_NAMES))
+
+    def output(self):
+        self.name = self.name.lower()
 
 
 # Giryang
