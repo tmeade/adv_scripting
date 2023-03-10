@@ -94,7 +94,7 @@ class Element(NameBase):
 
     def validate(self):
         if self.name not in VALID_SIDE_NAMES:
-            logger.info('Element name must match: {}'.format(VALID_ELEMENT)) /* VALID_ELEMENT is I think it'll change depending on which part you're rigging now. 
+            logger.info('Element name must match: {}'.format(VALID_ELEMENT)) /* VALID_ELEMENT is I think it'll change depending on which part you're rigging now.
 									ex)arm:shoulder, elbow, wrist, hand... */
             return
 
@@ -118,7 +118,16 @@ class ControlType(NameBase):
 
 # Hari
 class RigType(NameBase):
-    pass
+    def __init__(self, name):
+        NameBase.__init__(self, name)
+
+    def validate(self):
+        if self.name not in VALID_RIG_TYPES:
+            logger.error('Control types must match: {}'.format(VALID_RIG_TYPES))
+            return
+
+    def output(self):
+        self.name = self.name.lower()
 
 
 # Thomas
@@ -230,4 +239,3 @@ def test():
     side_type = Side('lt')
     full_name = RigName(side=side_type, region='front', element='arm', control_type='ik', rig_type=RigType('ctrl'), maya_type='curve', position=1)
     logger.debug(full_name)
-
