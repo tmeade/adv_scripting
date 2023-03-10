@@ -72,7 +72,18 @@ class Region(NameBase):
 
 # Giryang
 class Element(NameBase):
-    pass
+
+    def __init__(self, name):
+        NameBase.__init__(self, name)
+
+    def validate(self):
+        if self.name not in VALID_SIDE_NAMES:
+            logger.info('Element name must match: {}'.format(VALID_ELEMENT)) /* VALID_ELEMENT is I think it'll change depending on which part you're rigging now. 
+									ex)arm:shoulder, elbow, wrist, hand... */
+            return
+
+    def output(self):
+        self.name = self.name.lower()
 
 
 # Jessica
