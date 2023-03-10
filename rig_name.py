@@ -36,7 +36,7 @@ class NameBase():
         return
 
     def output(self):
-        return
+        self.name = self.name.lower()
 
 
 class Side(NameBase):
@@ -45,11 +45,11 @@ class Side(NameBase):
 
     def validate(self):
         if self.name not in VALID_SIDE_NAMES:
-            logger.info('Side name must match: {}'.format(VALID_SIDE_NAMES))
+            logger.error('Side name must match: {}'.format(VALID_SIDE_NAMES))
             return
 
     def output(self):
-        self.name = self.name.lower()
+        return
 
 
 # Jodi
@@ -79,7 +79,16 @@ class RigType(NameBase):
 
 # Thomas
 class MayaType(NameBase):
-    pass
+    def __init__(self, name):
+        NameBase.__init__(self, name)
+
+    def validate(self):
+        if self.name not in VALID_MAYA_TYPES:
+            logger.error('Name must be a maya type: {}'.format(VALID_MAYA_TYPES))
+            return
+
+    def output(self):
+        return
 
 
 class RigName(NameBase):
