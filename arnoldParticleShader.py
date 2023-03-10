@@ -11,16 +11,16 @@ def create_aiStandardSurface_for_particleShape(
         includes a particle sampler info to support per particle color, opacity, and emission.
     Arguments:
         particle_node (list): The particle node to process.
-        delete_original_sha   der (bool): When True, delete original shading network.
+        delete_original_shader (bool): When True, delete original shading network.
     Returns:
         shading_group (str): The new Arnold shading group
 
     '''
     # Validate selection
+    logging.debug('Particle node length: {}'.format(len(particle_node)))
     if len(particle_node) == 0:
         logging.error('Nothing is selected')
         return
-
 
     # Validade particle type
     shapes = mc.listRelatives(particle_node, shapes=True)
