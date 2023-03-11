@@ -124,7 +124,7 @@ class RigType(NameBase):
 
     def validate(self):
         if self.name not in VALID_RIG_TYPES:
-            logger.error('Control types must match: {}'.format(VALID_RIG_TYPES))
+            logger.error('Rig types must match: {}'.format(VALID_RIG_TYPES))
             return
 
     def output(self):
