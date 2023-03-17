@@ -1,5 +1,6 @@
 import maya.cmds as mc
 import logging
+import re
 logger = logging.getLogger(__name__)
 
 # Naming convention
@@ -11,7 +12,6 @@ VALID_REGION_NAMES = ['front', 'rear', 'middle', 'upper', 'lower']
 VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver']
 VALID_RIG_TYPES = ['ctrl', 'offest', 'sdk', 'handle', 'loc', 'jnt', 'geo', 'constraint', 'grp']
 VALID_MAYA_TYPES = mc.ls(nodeTypes=True)
-#VALID_POSITION_TYPES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 
 class NameBase():
@@ -57,21 +57,18 @@ class Side(NameBase):
         return
 
 
-# Jodi
-
 class Position(NameBase):
     def __init__(self, name):
         NameBase.__init__(self, name)
 
-        def validate(self):
-            if not isinstance(self, int):
-                logger.error(f"{self} should be a positive number")
-                return
-
-        def output(self):
+    def validate(self):
+        if not isinstance(self.name, int):
+            logger.error(f"{self} should be a positive number")
             return
 
-        #not sure with the Position. Should I add position in constants first?
+    def output(self):
+        self.name = f'{int(self.name):02}'
+
 
 # Dayz
 class Region(NameBase):
@@ -83,7 +80,7 @@ class Region(NameBase):
             logger.error('Region name must match: {}'.format(VALID_REGION_NAMES))
 
     def output(self):
-        self.name = self.name.lower()
+        return
 
 
 # Giryang
@@ -93,13 +90,17 @@ class Element(NameBase):
         NameBase.__init__(self, name)
 
     def validate(self):
-        if self.name not in VALID_SIDE_NAMES:
-            logger.info('Element name must match: {}'.format(VALID_ELEMENT)) /* VALID_ELEMENT is I think it'll change depending on which part you're rigging now. 
-									ex)arm:shoulder, elbow, wrist, hand... */
-            return
+        if not isinstance(self.name, str):
+            logger.error('Element name must be a string.')
+
+        regex = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
+        if regex.search(self.name):
+            logger.error('Element name contains special characters')
+        
+        return
 
     def output(self):
-        self.name = self.name.lower()
+        return
 
 
 # Jessica
@@ -113,12 +114,21 @@ class ControlType(NameBase):
             return
 
     def output(self):
-        self.name = self.name.lower()
+        return
 
 
 # Hari
 class RigType(NameBase):
-    pass
+    def __init__(self, name):
+        NameBase.__init__(self, name)
+
+    def validate(self):
+        if self.name not in VALID_RIG_TYPES:
+            logger.error('Rig types must match: {}'.format(VALID_RIG_TYPES))
+            return
+
+    def output(self):
+        return
 
 
 # Thomas
@@ -224,10 +234,15 @@ class RigName(NameBase):
 
 # for testing purposes
 def test():
+    logger.debug(f"{Side('lt')}")
+    logger.debug(f"{Region('Front')}")
+    logger.debug(f"{Element('arm')}")
+    logger.debug(f"{ControlType('ik')}")
+    logger.debug(f"{RigType('ctrl')}")
     logger.debug(f"{MayaType('joint')}")
-    logger.debug(f"{RigName(full_name = 'lt_front_arm_ik_ctrl_curve_01')}")
+    logger.debug(f"{Position(20)}")
+    logger.debug(f"{RigName(full_name = 'lt_front_arm_ik_ctrl_curve_20')}")
 
     side_type = Side('lt')
-    full_name = RigName(side=side_type, region='front', element='arm', control_type='ik', rig_type=RigType('ctrl'), maya_type='curve', position=1)
+    full_name = RigName(side=side_type, region='front', element='arm', control_type='ik', rig_type=RigType('ctrl'), maya_type='curve', position=20)
     logger.debug(full_name)
-
