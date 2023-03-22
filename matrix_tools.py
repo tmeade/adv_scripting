@@ -48,8 +48,8 @@ def matrix_parent_constraint(driver, driven):
     '''
 
     # TODO: This is a useful funciton on it's own.  Create a new function to return the offset
-    offset_matrix = om.MMatrix(mc.getAttr(f'{driven}.worldMatrix[0]')) *
-                    om.MMatrix(mc.getAttr(f'{driver}.worldInverseMatrix[0]'))
+    offset_matrix = (om.MMatrix(mc.getAttr(f'{driven}.worldMatrix[0]')) *
+                    om.MMatrix(mc.getAttr(f'{driver}.worldInverseMatrix[0]')))
 
     # Create a mult matrix node.  It will have three inpusts:
     #       in[0]: offset matrix from driver.
