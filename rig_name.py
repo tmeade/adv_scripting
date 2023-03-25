@@ -96,7 +96,7 @@ class Element(NameBase):
         regex = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
         if regex.search(self.name):
             logger.error('Element name contains special characters')
-        
+
         return
 
     def output(self):
@@ -205,32 +205,49 @@ class RigName(NameBase):
 
         # Check type of each variable.  If NameBase then continue, otherwise instantiate the name
         else:
-            if not isinstance(self.side, Side):
+            if self.side and not isinstance(self.side, Side):
                 self.side = Side(self.side)
-            if not isinstance(self.region, Region):
+            if self.region and not isinstance(self.region, Region):
                 self.region = Region(self.region)
             if not isinstance(self.element, Element):
                 self.element = Element(self.element)
-            if not isinstance(self.control_type, ControlType):
+            if self.control_type and not isinstance(self.control_type, ControlType):
                 self.control_type = ControlType(self.control_type)
             if not isinstance(self.rig_type, RigType):
                 self.rig_type = RigType(self.rig_type)
-            if not isinstance(self.maya_type, MayaType):
+            if self.maya_type and not isinstance(self.maya_type, MayaType):
                 self.maya_type = MayaType(self.maya_type)
-            if not isinstance(self.position, Position):
+            if self.position and not isinstance(self.position, Position):
                 self.position = Position(self.position)
 
     def output(self):
         # Construct the string for entire object name.
         #
-        # Allow optional side, region, position
-        self.name = f'{self.side}_' \
-                            f'{self.region}_' \
-                            f'{self.element}_' \
-                            f'{self.control_type}_' \
-                            f'{self.rig_type}_' \
-                            f'{self.maya_type}_' \
-                            f'{self.position}'
+        # Allow optional side, region, control_type, maya_type, position
+        name = str()
+        if self.side:
+            name = f'{name}{self.side}_'
+        if self.region:
+            name = f'{name}{self.region}_'
+        # Element is required
+        name = f'{name}{self.element}_'
+        if self.control_type:
+            name = f'{name}{self.control_type}_'
+        # Rig_type is required
+        name = f'{name}{self.rig_type}_'
+        if self.maya_type:
+            name = f'{name}{self.maya_type}_'
+        if self.position:
+            name = f'{name}{self.position}_'
+
+        self.name = name.strip('_')
+        # self.name = f'{self.side}_' \
+        #                     f'{self.region}_' \
+        #                     f'{self.element}_' \
+        #                     f'{self.control_type}_' \
+        #                     f'{self.rig_type}_' \
+        #                     f'{self.maya_type}_' \
+        #                     f'{self.position}'
 
 # for testing purposes
 def test():
