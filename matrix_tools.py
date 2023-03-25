@@ -35,7 +35,7 @@ def snap_offset_parent_matrix(source, target):
 
     return offset_matrix
 
-def matrix_parent_constraint(driver, driven):
+def matrix_parent_constraint(driver, driven, connect_output=None):
     '''
     Description:
         A function to connect "control" to a driven object using offset parent matrix
@@ -44,7 +44,7 @@ def matrix_parent_constraint(driver, driven):
         derven (str): Name of the object whose parentOffset matrix will be determined by the offset
                     and transform of the driver.
     Returns:
-        offsetMatriix (MMatrix): offset beteween driver and driven.
+        offset_matriix (MMatrix): offset beteween driver and driven.
     '''
 
     # TODO: This is a useful funciton on it's own.  Create a new function to return the offset
@@ -64,7 +64,11 @@ def matrix_parent_constraint(driver, driven):
         mc.connectAttr(f'{driven_parent[0]}.worldInverseMatrix[0]',
                        f'{mult_matrix_node}.matrixIn[2]')
 
-    mc.connectAttr(f'{mult_matrix_node}.matrixSum', f'{driven}.offsetParentMatrix')
+    # Connect resulting matrix to specified output or to the driven's offsetParentMatrix
+    if connect_output:
+        mc.connectAttr(f'{mult_matrix_node}.matrixSum', f'{connect_output}')
+    else:
+        mc.connectAttr(f'{mult_matrix_node}.matrixSum', f'{driven}.offsetParentMatrix')
 
     # TODO: break this out into it's own function.  YES, its short.. but we'll use it a lot.
     # zero out source object
