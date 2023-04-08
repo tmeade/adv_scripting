@@ -28,11 +28,11 @@ class Root(rap.Appendage):
         mt.snap_offset_parent_matrix(self.root_ctrl, self.start_joint)
         mt.matrix_parent_constraint(self.root_ctrl,
                                     self.start_joint,
-                                    connect_output=f'{self.output}.start_matrix')
+                                    connect_output=f'{self.output}.start_joint_matrix')
 
     def connect_outputs(self):
         # Connect the start matrix on the output node to the skeleton
-        mc.connectAttr(f'{self.output}.start_matrix', f'{self.start_joint}.offsetParentMatrix')
+        mc.connectAttr(f'{self.output}.start_joint_matrix', f'{self.start_joint}.offsetParentMatrix')
 
     def cleanup(self):
         # Parent the controls to the control group.

@@ -56,7 +56,7 @@ class Appendage(ABC):
 
         self.output = mc.createNode('transform', name=rn.RigName(element='output',
                                                                     rig_type='grp'))
-        mc.addAttr(self.output, longName='start_matrix', attributeType='matrix')
+        # mc.addAttr(self.output, longName='start_joint_matrix', attributeType='matrix')
 
     @abstractmethod
     def setup(self):
