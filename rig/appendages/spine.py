@@ -182,7 +182,7 @@ class Root(rap.Appendage):
             mc.rename("loftedSurface1", "spineSetupSurface")
             mc.setAttr("spineSetupSurface.visibility", False)
 
-        main()
+        
         # No additional setup needed for setup()
         return
 
