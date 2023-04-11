@@ -65,7 +65,7 @@ class TwoBoneFKIK(rap.Appendage):
         self.fk_arm_controls = list()
         for joint in self.fk_skeleton:
             # TODO: USE THE RigName class to name this!
-            fk_control = mc.createNode('transform', n=f'{joint}'+'_fk_control')
+            fk_control = mc.createNode('transform', n=f'{joint}'+'_fk_ctrl_transform')
             mt.snap_offset_parent_matrix(fk_control, joint)
             mt.matrix_parent_constraint(fk_control, joint)
 
