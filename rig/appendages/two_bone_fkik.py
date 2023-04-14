@@ -78,6 +78,26 @@ class TwoBoneFKIK(rap.Appendage):
                 mc.parent(self.fk_arm_controls[index], self.fk_arm_controls[index-1])
                 mt.matrix_parent_constraint(self.fk_arm_controls[index-1], self.fk_arm_controls[index])
 
+        #IK
+
+        root = self.ik_skeleton[0]
+        mid =  self.ik_skeleton[1]
+        end =  self.ik_skeleton[2]
+
+        #IK handle
+        # TODO: IK control naming
+        arm_ik_handle = mc.ikHandle(sj = root, ee = end, sol = 'ikRPsolver')
+        ik_control = mc.createNode('transform')
+        mt.snap_offset_parent_matrix(ik_control[0],arm_ik_handle[0])
+        mc.parent(arm_ik_handle[0],ik_control[0])
+
+        #pole vector
+        # TODO: PV control naming
+        pv_position = pv.calculate_pole_vector_position(root, mid, end)
+        arm_pv_control = mc.createNode('transform')
+        mc.move(pv_position.x, pv_position.y, pv_position.z, arm_pv_control)
+        mc.makeIdentity(arm_pv_control,apply=True, t=True, r=True, s=True)
+        mc.poleVectorConstraint(arm_pv_control,arm_ik_handle[0])
 
     def connect_outputs(self):
         # Connect the start matrix on the output node to the skeleton
@@ -87,6 +107,8 @@ class TwoBoneFKIK(rap.Appendage):
     def cleanup(self):
         # Parent the controls to the control group.
         mc.parent(self.fk_arm_controls[0], self.controls_grp)
+        mc.parent(ik_control[0], self.controls_grp)
+        mc.parent(arm_pv_control, self.controls_grp)
         mc.parent(self.fk_skeleton[0], self.controls_grp)
         mc.parent(self.ik_skeleton[0], self.controls_grp)
 
@@ -136,3 +158,18 @@ def create_control_joints_from_skeleton(start_joint,
     control_skeleton.reverse()
 
     return control_skeleton
+
+def FKIK_blending():
+
+    FKIK_switch = mc.createNode('transform')
+    mc.addAttr(FKIK_switch,ln=('FKIK'), at='double', min=0, max=1, k=True)
+    # TODO : need to get only the ones that needs blending (start, mid, end)
+    for bnd_jnt in bnd_skeleton:
+
+            blender = mc.createNode('blendColors', n= bnd_jnt+'_fkik_blend')
+            fk = bnd_jnt.replace('bnd', 'fk')
+            ik = bnd_jnt.replace('bnd', 'ik')
+            mc.connectAttr((ik + '.rotate'), (blender + '.color1'), f=True)
+            mc.connectAttr((fk + '.rotate'), (blender + '.color2'), f=True)
+            mc.connectAttr((blender + '.output'), (bnd_jnt + '.rotate'), f=True)
+            mc.connectAttr(FKIK_switch +'.FKIK', (blender + '.blender'), f=True)
