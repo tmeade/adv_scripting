@@ -1,3 +1,6 @@
+import maya.cmds as cmds
+import maya.api.OpenMaya as om
+
 def calculate_pole_vector_position(root, mid, end):
 
     root_position = cmds.xform(root, q=True, ws=True, t=True)

@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 # Constants
 VALID_SIDE_NAMES = ['lt', 'rt', 'ctr']
 VALID_REGION_NAMES = ['front', 'rear', 'middle', 'upper', 'lower']
-VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver']
-VALID_RIG_TYPES = ['ctrl', 'offest', 'sdk', 'handle', 'loc', 'jnt', 'geo', 'constraint', 'grp']
+VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver', 'switch']
+VALID_RIG_TYPES = ['ctrl', 'offest', 'sdk', 'handle', 'loc', 'jnt', 'geo', 'constraint', 'grp', 'util']
 VALID_MAYA_TYPES = mc.ls(nodeTypes=True)
 
 

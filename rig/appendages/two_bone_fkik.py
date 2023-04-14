@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 import importlib as il
 il.reload(rap)
 il.reload(mt)
+il.reload(pv)
+il.reload(rn)
 
 
 class TwoBoneFKIK(rap.Appendage):
@@ -19,9 +21,11 @@ class TwoBoneFKIK(rap.Appendage):
                     start_joint,
                     num_upperTwist_joint,
                     num_lowerTwist_joint,
+                    side,
                     input_matrix=None):
         self.num_upperTwist_joints = num_upperTwist_joint
         self.num_lowerTwist_joints = num_lowerTwist_joint
+        self.side = side
         rap.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
 
     def setup(self):
@@ -85,19 +89,34 @@ class TwoBoneFKIK(rap.Appendage):
         end =  self.ik_skeleton[2]
 
         #IK handle
-        # TODO: IK control naming
+        # TODO: Use rigname script to name handle and controls
         arm_ik_handle = mc.ikHandle(sj = root, ee = end, sol = 'ikRPsolver')
-        ik_control = mc.createNode('transform')
-        mt.snap_offset_parent_matrix(ik_control[0],arm_ik_handle[0])
-        mc.parent(arm_ik_handle[0],ik_control[0])
+        self.ik_control = mc.createNode('transform')
+        mt.snap_offset_parent_matrix(self.ik_control, arm_ik_handle[0])
+        mc.parent(arm_ik_handle[0], self.ik_control)
 
         #pole vector
         # TODO: PV control naming
         pv_position = pv.calculate_pole_vector_position(root, mid, end)
-        arm_pv_control = mc.createNode('transform')
-        mc.move(pv_position.x, pv_position.y, pv_position.z, arm_pv_control)
-        mc.makeIdentity(arm_pv_control,apply=True, t=True, r=True, s=True)
-        mc.poleVectorConstraint(arm_pv_control,arm_ik_handle[0])
+        self.arm_pv_control = mc.createNode('transform')
+        # TODO: place pole vector with offsetParentMatrix
+        mc.move(pv_position.x, pv_position.y, pv_position.z, self.arm_pv_control)
+        mc.makeIdentity(self.arm_pv_control, apply=True, t=True, r=True, s=True)
+        mc.poleVectorConstraint(self.arm_pv_control, arm_ik_handle[0])
+
+        # Create blended output
+        # FKIK_switch = mc.createNode('transform', rn.RigName(element='armSwitches', side=self.side, control_type='switch', rig_type='grp'))
+        FKIK_switch = mc.createNode('transform')
+        mc.addAttr(FKIK_switch, ln=('FKIK'), at='double', min=0, max=1, k=True)
+
+
+        result_matricies = list()
+        for fk, ik in zip(self.fk_skeleton, self.ik_skeleton):
+            result_matricies.append(blend_skeleton(fk,
+                                                    ik,
+                                                    f'{FKIK_switch}.FKIK',
+                                                    side=self.side))
+
 
     def connect_outputs(self):
         # Connect the start matrix on the output node to the skeleton
@@ -107,8 +126,8 @@ class TwoBoneFKIK(rap.Appendage):
     def cleanup(self):
         # Parent the controls to the control group.
         mc.parent(self.fk_arm_controls[0], self.controls_grp)
-        mc.parent(ik_control[0], self.controls_grp)
-        mc.parent(arm_pv_control, self.controls_grp)
+        mc.parent(self.ik_control, self.controls_grp)
+        mc.parent(self.arm_pv_control, self.controls_grp)
         mc.parent(self.fk_skeleton[0], self.controls_grp)
         mc.parent(self.ik_skeleton[0], self.controls_grp)
 
@@ -159,17 +178,27 @@ def create_control_joints_from_skeleton(start_joint,
 
     return control_skeleton
 
-def FKIK_blending():
+def blend_skeleton(fk_joint, ik_joint, switch_attribute, side=None):
+    print ('fk_joint', fk_joint)
 
-    FKIK_switch = mc.createNode('transform')
-    mc.addAttr(FKIK_switch,ln=('FKIK'), at='double', min=0, max=1, k=True)
-    # TODO : need to get only the ones that needs blending (start, mid, end)
-    for bnd_jnt in bnd_skeleton:
+    blender = mc.createNode('blendColors', n= rn.RigName(element = f'ik_{fk_joint}',
+                                            side=side,
+                                            control_type='util',
+                                            rig_type='blendColors'))
+    mc.connectAttr((ik_joint + '.rotate'), (blender + '.color1'), f=True)
+    mc.connectAttr((fk_joint + '.rotate'), (blender + '.color2'), f=True)
+    mc.connectAttr(switch_attribute, (blender + '.blender'), f=True)
 
-            blender = mc.createNode('blendColors', n= bnd_jnt+'_fkik_blend')
-            fk = bnd_jnt.replace('bnd', 'fk')
-            ik = bnd_jnt.replace('bnd', 'ik')
-            mc.connectAttr((ik + '.rotate'), (blender + '.color1'), f=True)
-            mc.connectAttr((fk + '.rotate'), (blender + '.color2'), f=True)
-            mc.connectAttr((blender + '.output'), (bnd_jnt + '.rotate'), f=True)
-            mc.connectAttr(FKIK_switch +'.FKIK', (blender + '.blender'), f=True)
+    # compose matrix
+    result_matrix = mc.createNode('composeMatrix')
+    mc.connectAttr((blender + '.output'), (result_matrix + '.inputRotate'), f=True)
+
+    return result_matrix
+
+
+
+'''
+import adv_scripting.rig.appendages.two_bone_fkik as twoB
+il.reload(twoB)
+arm = twoB.TwoBoneFKIK('arm', 'lt_upArm_bnd_jnt_01', 1, 1, 'lt')
+'''
