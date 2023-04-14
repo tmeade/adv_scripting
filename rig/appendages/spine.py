@@ -1,6 +1,6 @@
 import maya.cmds as mc
-import adv_scripting.rig.name as rn
-import adv_scripting.martix_tools as mt
+import adv_scripting.rig_name as rn
+import adv_scripting.matrix_tools as mt
 import adv_scripting.rig.appendages.appendage as rap
 import logging
 import pymel.core as pm
@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 import importlib as il
 il.reload(rap)
 il.reload(mt)
+
+# Just fix Typo #
 
 class Root(rap.Appendage):
     def __init__(self, appendage_name, start_joint, input_matrix):
