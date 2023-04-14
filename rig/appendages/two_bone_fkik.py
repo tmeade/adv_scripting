@@ -4,6 +4,7 @@ import adv_scripting.rig_name as rn
 import adv_scripting.matrix_tools as mt
 import adv_scripting.rig.appendages.appendage as rap
 import adv_scripting.pole_vector as pv
+import adv_scripting.utilities as utils
 
 import logging
 logger = logging.getLogger(__name__)
@@ -13,6 +14,8 @@ il.reload(rap)
 il.reload(mt)
 il.reload(pv)
 il.reload(rn)
+il.reload(utils)
+
 
 
 class TwoBoneFKIK(rap.Appendage):
@@ -47,14 +50,14 @@ class TwoBoneFKIK(rap.Appendage):
         self.bnd_joints['end_joint'] = skeleton[self.num_upperTwist_joints + self.num_lowerTwist_joints + 1]
 
         # Extract a control skeleton for the fk
-        self.fk_skeleton = create_control_joints_from_skeleton( self.bnd_joints['start_joint'],
+        self.fk_skeleton = utils.create_control_joints_from_skeleton( self.bnd_joints['start_joint'],
                                                                 self.bnd_joints['end_joint'],
                                                                 rn.ControlType('fk'),
                                                                 self.num_upperTwist_joints,
                                                                 self.num_lowerTwist_joints)
 
         # Extract a control skeleton for the ik
-        self.ik_skeleton = create_control_joints_from_skeleton( self.bnd_joints['start_joint'],
+        self.ik_skeleton = utils.create_control_joints_from_skeleton( self.bnd_joints['start_joint'],
                                                                 self.bnd_joints['end_joint'],
                                                                 rn.ControlType('ik'),
                                                                 self.num_upperTwist_joints,
@@ -134,49 +137,7 @@ class TwoBoneFKIK(rap.Appendage):
 
 
 
-def create_control_joints_from_skeleton(start_joint,
-                                        end_joint,
-                                        control_type,
-                                        num_upperTwist_joints,
-                                        num_lowerTwist_joints):
 
-    # Duplicate the skeleton and parent it to the world
-    duplicate_skeleton = mc.duplicate(start_joint)
-    mc.parent(duplicate_skeleton[0], w=True)
-
-    # Rename the skeleton by replaceing 'bnd' with the control_type.
-    for joint in mc.listRelatives(duplicate_skeleton[0], ad=True, fullPath=True):
-        mc.rename(joint,
-                  joint.split('|')[-1].replace('_bnd_', (f'_{control_type}_')))
-    start_joint = mc.rename(duplicate_skeleton[0],
-                            duplicate_skeleton[0].split('|')[-1].replace('_bnd_', (f'_{control_type}_')))
-
-    # Delete all of the joints in the hierarchy below the end joint
-    mc.delete(mc.listRelatives(end_joint.replace('_bnd_', (f'_{control_type}_'))))
-
-    # Use the number of twist joints to extract the control joints
-    skeleton = mc.listRelatives(start_joint, ad=True)
-    skeleton.reverse()
-    if num_upperTwist_joints > 0:
-        middle_joint = skeleton[num_upperTwist_joints]
-    else:
-        middle_joint = skeleton[0]
-
-    end_joint = skeleton[-1]
-
-    # Create control hierarchy
-    mc.parent(end_joint, middle_joint)
-    mc.parent(middle_joint, start_joint)
-
-    # Remove twist joints
-    mc.delete(mc.listRelatives(start_joint)[0])
-    mc.delete(mc.listRelatives(middle_joint)[0])
-
-    control_skeleton = mc.listRelatives(start_joint, ad=True)
-    control_skeleton.append(start_joint)
-    control_skeleton.reverse()
-
-    return control_skeleton
 
 def blend_skeleton(fk_joint, ik_joint, switch_attribute, side=None):
     print ('fk_joint', fk_joint)
