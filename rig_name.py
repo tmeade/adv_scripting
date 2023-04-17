@@ -9,13 +9,14 @@ e.g. lt_front_arm_ik_ctrl_curve_01
 import maya.cmds as mc
 import logging
 import re
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger()
 
 # Constants
 VALID_SIDE_TYPES = ['lt', 'rt', 'ctr']
-VALID_REGION_TYPES = ['front', 'rear', 'middle', 'upper', 'lower']
+VALID_REGION_TYPES = ['front', 'rear', 'middle', 'upper', 'lower', 'start', 'end']
 VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver', 'switch']
-VALID_RIG_TYPES = ['ctrl', 'offset', 'sdk', 'handle', 'loc', 'jnt', 'geo', 'constraint', 'grp', 'util']
+VALID_RIG_TYPES = ['ctrl', 'offset', 'sdk', 'handle', 'pv', 'loc', 'jnt', 'geo', 'constraint', 'grp', 'util']
 VALID_MAYA_TYPES = [x.lower() for x in mc.ls(nodeTypes=True)]
 
 # Parse name possibilities
@@ -29,30 +30,36 @@ PARSE_REGION_TYPES = {
     'rear': ['rear', 'r', 're', 'rr', 'b', 'bak', 'back', 'behind', 'tail', 'tl'],
     'middle': ['middle', 'm', 'mid', 'mdl', 'ctr', 'cen', 'cntr', 'center', 'c'],
     'upper': ['upper', 'u', 'up', 'upp', 'upr', 't', 'tp', 'top'],
-    'lower': ['lower', 'l', 'lo', 'low,' 'lwr', 'b', 'bt', 'bot', 'bottom']
+    'lower': ['lower', 'l', 'lo', 'low', 'lwr', 'b', 'bt', 'bot', 'bottom'],
+    'start': ['start', 'starting', 'st', 'str', 'sta', 'begin', 'beg', 'bg'],
+    'end': ['end', 'ending', 'ee', 'final', 'fin', 'fn']
     }
 PARSE_CONTROL_TYPES = {
     'ik': ['ik'],
     'fk': ['fk'],
     'bnd': ['bnd', 'bind', 'bn'],
-    'dyn': ['dyn', 'dynamic'],
-    'mocap': ['mocap'],
-    'driver': ['driver', 'dr', 'drv', 'driv']
+    'dyn': ['dyn', 'dn', 'dynamic'],
+    'mocap': ['mocap', 'mo', 'moc'],
+    'driver': ['driver', 'd', 'dr', 'drv', 'driv'],
+    'switch': ['switch', 's', 'sw', 'swi', 'swt', 'sch', 'swch']
     }
 PARSE_RIG_TYPES = {
-    'ctrl': ['ctrl', 'ctl', 'ctlr', 'control'],
-    'offset': ['offset', 'offest', 'ofs'],
-    'sdk': ['sdk', 'setdrivenkey', 'driven'],
-    'handle': ['handle', 'handl', 'ikhandle'],
+    'ctrl': ['ctrl', 'ctl', 'ctr', 'ctlr', 'control'],
+    'offset': ['offset', 'offest', 'ofs', 'off', 'ofst'],
+    'sdk': ['sdk', 'setdrivenkey', 'set', 'driven'],
+    'handle': ['handle', 'handl', 'ikhandle', 'han', 'hdl'],
+    'pv': ['pv', 'polevector', 'pole', 'vec', 'pvec', 'pov'],
     'loc': ['loc', 'locator'],
-    'jnt': ['jnt', 'joint'],
+    'jnt': ['jnt', 'jn', 'joi', 'joint'],
     'geo': ['geo', 'geometry'],
-    'constraint': ['constraint', 'constr', 'cst'],
-    'grp': ['grp', 'group']
+    'constraint': ['constraint', 'constr', 'cn', 'con', 'cst', 'cnsr'],
+    'grp': ['grp', 'gr', 'gro', 'group'],
+    'util': ['util', 'utl', 'uti', 'utility']
 }
 NUM_TYPES = 7
 
-class NameBase():
+
+class NameBase(): # Abstract Base Class
     '''
     Description:
         Base class for returning a valid string object name.
@@ -63,15 +70,19 @@ class NameBase():
     '''
 
     def __init__(self, name=None, parse=False):
-        self.name = name
+        if isinstance(name, type(self)):
+            self.name = name.name
+        else:
+            self.name = name
         if parse and not self.validate():
             self.parse_name()
 
     def __str__(self):
-        return str(self.name)
+        return self.output()
 
     def __repr__(self):
-        return f"{self.__class__.__name__}('{self.name}')"
+        return f'{self.__class__.__name__}("{self.output()}")'
+        #return f'{type(self).__name}({super().__repr__()})'
 
     def validate(self):
         '''
@@ -106,8 +117,8 @@ class Side(NameBase):
 
     def validate(self):
         if not self.name: return False
-        if self.name not in VALID_SIDE_NAMES:
-            logger.warning('Side name must match: {}'.format(VALID_SIDE_NAMES))
+        if self.name not in VALID_SIDE_TYPES:
+            #logger.debug('Side name must match options: {}'.format(VALID_SIDE_TYPES))
             return False
         return True
 
@@ -117,7 +128,7 @@ class Side(NameBase):
             if name in PARSE_SIDE_TYPES[opt]:
                 self.name = opt
                 return
-        logger.warning(f'Failed to parse Side {self.name}')
+        #logger.debug(f'Side failed to parse name {self.name}')
         self.name = None
 
 
@@ -129,7 +140,7 @@ class Position(NameBase):
     def validate(self):
         if not self.name: return False
         if not isinstance(self.name, int):
-            logger.warning(f'{self.name} should be a positive integer')
+            #logger.debug(f'{self.name} should be a positive integer')
             return False
         return True
 
@@ -138,13 +149,13 @@ class Position(NameBase):
             if self.name.isdecimal():
                 self.name = int(self.name)
             else:
-                logger.warning(f'Failed to parse Position {self.name}')
+                #logger.debug(f'Position failed to parse name {self.name}')
                 self.name = None
         else:
             try:
                 self.name = int(self.name)
             except:
-                logger.warning(f'Failed to parse Position {self.name}')
+                #logger.debug(f'Position failed to parse name {self.name}')
                 self.name = None
 
     def output(self):
@@ -161,8 +172,8 @@ class Region(NameBase):
 
     def validate(self):
         if not self.name: return False
-        if self.name not in VALID_REGION_NAMES:
-            logger.warning('Region name must match: {}'.format(VALID_REGION_NAMES))
+        if self.name not in VALID_REGION_TYPES:
+            #logger.debug('Region name must match options: {}'.format(VALID_REGION_TYPES))
             return False
         return True
 
@@ -172,7 +183,7 @@ class Region(NameBase):
             if name in PARSE_REGION_TYPES[opt]:
                 self.name = opt
                 return
-        logger.warning(f'Failed to parse Region {self.name}')
+        #logger.debug(f'Region failed to parse name {self.name}')
         self.name = None
 
 
@@ -185,12 +196,12 @@ class Element(NameBase):
     def validate(self):
         if not self.name: return False
         if not isinstance(self.name, str):
-            logger.warning('Element name must be a string.')
+            #logger.debug('Element name must be a string.')
             return False
 
         regex = re.compile('[@ !#$%^&*()<>?/\|}{~:]')
         if regex.search(self.name):
-            logger.warning('Element name contains special characters')
+            #logger.debug('Element name contains special characters')
             return False
 
         return True
@@ -208,7 +219,7 @@ class ControlType(NameBase):
     def validate(self):
         if not self.name: return False
         if self.name not in VALID_CONTROL_TYPES:
-            logger.warning('Control types must match: {}'.format(VALID_CONTROL_TYPES))
+            #logger.debug('Control types must match options: {}'.format(VALID_CONTROL_TYPES))
             return False
         return True
 
@@ -218,7 +229,7 @@ class ControlType(NameBase):
             if name in PARSE_CONTROL_TYPES[opt]:
                 self.name = opt
                 return
-        logger.warning(f'Failed to parse ControlType {self.name}')
+        #logger.debug(f'ControlType failed to parse name {self.name}')
         self.name = None
 
 
@@ -230,7 +241,7 @@ class RigType(NameBase):
     def validate(self):
         if not self.name: return False
         if self.name not in VALID_RIG_TYPES:
-            logger.warning('Rig types must match: {}'.format(VALID_RIG_TYPES))
+            #logger.debug('Rig types must match options: {}'.format(VALID_RIG_TYPES))
             return False
         return True
 
@@ -240,7 +251,7 @@ class RigType(NameBase):
             if name in PARSE_RIG_TYPES[opt]:
                 self.name = opt
                 return
-        logger.warning(f'Failed to parse RigType {self.name}')
+        #logger.debug(f'RigType failed to parse name {self.name}')
         self.name = None
 
 
@@ -260,20 +271,19 @@ class MayaType(NameBase):
     def validate(self):
         if not self.name: return False
         if self.name not in VALID_MAYA_TYPES:
-            logger.warning('Name must be a maya type: {}'.format(VALID_MAYA_TYPES))
+            #logger.debug('Maya types must match options: {}'.format(VALID_MAYA_TYPES))
             return False
         return True
 
     def parse_name(self):
         name = self.name.lower()
         if name not in VALID_MAYA_TYPES:
-            logger.warning(f'Failed to parse MayaType {self.name}')
+            #logger.debug(f'MayaType failed to parse name {self.name}')
             self.name = None
 
 
 class RigName(NameBase):
-    def __init__(
-                self,
+    def __init__(self,
                 full_name=None,
                 side=None,
                 region=None,
@@ -281,36 +291,104 @@ class RigName(NameBase):
                 control_type=None,
                 rig_type=None,
                 maya_type=None,
-                position=None
-                ):
+                position=None):
 
-        logger.debug('========== INIT ==========')
+        NameBase.__init__(self, full_name)
+
+        self.prefix = None
         self.full_name = full_name
-        if isinstance(side, Side): self.side = side
-        elif side: self.side = Side(side)
+        if full_name and '|' in full_name:
+            longname = full_name.rsplit('|', 1)
+            self.prefix = longname[0]
+            self.full_name = longname[1]
+        if side:
+            if isinstance(side, Side): self.side = side
+            else: self.side = side
         else: self.side = None
-        if isinstance(region, Region): self.region = region
-        elif region: self.region = Region(region)
+        if region:
+            if isinstance(region, Region): self.region = region
+            else: self.region = Region(region)
         else: self.region = None
-        if isinstance(element, Element): self.element = element
-        elif element: self.element = Element(element)
+        if element:
+            if isinstance(element, Element): self.element = element
+            else: self.element = Element(element)
         else: self.element = None
-        if isinstance(control_type, ControlType): self.control_type = control_type
-        elif control_type: self.control_type = ControlType(control_type)
+        if control_type:
+            if isinstance(control_type, ControlType): self.control_type = control_type
+            else: self.control_type = ControlType(control_type)
         else: self.control_type = None
-        if isinstance(rig_type, RigType): self.rig_type = rig_type
-        elif rig_type: self.rig_type = RigType(rig_type)
+        if rig_type:
+            if isinstance(rig_type, RigType): self.rig_type = rig_type
+            else: self.rig_type = RigType(rig_type)
         else: self.rig_type = None
-        if isinstance(maya_type, MayaType): self.maya_type = maya_type
-        elif maya_type: self.maya_type = MayaType(maya_type)
+        if maya_type:
+            if isinstance(maya_type, MayaType): self.maya_type = maya_type
+            else: self.maya_type = MayaType(maya_type)
         else: self.maya_type = None
-        if isinstance(position, Position): self.position = position
-        elif position: self.position = Position(position)
+        if position:
+            if isinstance(position, Position): self.position = position
+            else: self.position = Position(position)
         else: self.position = None
 
-        NameBase.__init__(self, self.full_name)
+        # logger.debug('self.full_name: {}'.format(self.full_name))
+        # logger.debug('self.prefix: {}'.format(self.prefix))
+        # logger.debug('self.side: {}'.format(self.side))
+        # logger.debug('self.region: {}'.format(self.region))
+        # logger.debug('self.element: {}'.format(self.element))
+        # logger.debug('self.control_type: {}'.format(self.control_type))
+        # logger.debug('self.rig_type: {}'.format(self.rig_type))
+        # logger.debug('self.maya_type: {}'.format(self.maya_type))
+        # logger.debug('self.position: {}'.format(self.position))
+
+        if not self.validate():
+            self.parse_name()
+        #logger.debug('RigName output: {}'.format(self.output()))
+
+    def rename(self,
+                full_name=None,
+                side=None,
+                region=None,
+                element=None,
+                control_type=None,
+                rig_type=None,
+                maya_type=None,
+                position=None):
+        logger.debug('========== RENAME ==========')
+        if full_name:
+            if '|' in full_name:
+                longname = full_name.rsplit('|', 1)
+                self.prefix = longname[0]
+                self.full_name = longname[1]
+            else:
+                self.full_name = full_name
+        else:
+            self.full_name = None
+        if side:
+            if isinstance(side, Side): self.side = side
+            else: self.side = Side(side, parse=True)
+        if region:
+            if isinstance(region, Region): self.region = region
+            else: self.region = Region(region, parse=True)
+        if element:
+            if isinstance(element, Element): self.element = element
+            else: self.element = Element(element, parse=True)
+        if control_type:
+            if isinstance(control_type, ControlType): self.control_type = control_type
+            else: self.control_type = ControlType(control_type, parse=True)
+        if rig_type:
+            if isinstance(rig_type, RigType): self.rig_type = rig_type
+            else: self.rig_type = RigType(rig_type, parse=True)
+        if maya_type:
+            if isinstance(maya_type, MayaType): self.maya_type = maya_type
+            else: self.maya_type = MayaType(maya_type, parse=True)
+        if position:
+            if isinstance(position, Position): self.position = position
+            else: self.position = Position(position, parse=True)
+        if not self.validate():
+            self.parse_name()
 
         logger.debug('self.full_name: {}'.format(self.full_name))
+        logger.debug('self.prefix: {}'.format(self.prefix))
         logger.debug('self.side: {}'.format(self.side))
         logger.debug('self.region: {}'.format(self.region))
         logger.debug('self.element: {}'.format(self.element))
@@ -318,10 +396,7 @@ class RigName(NameBase):
         logger.debug('self.rig_type: {}'.format(self.rig_type))
         logger.debug('self.maya_type: {}'.format(self.maya_type))
         logger.debug('self.position: {}'.format(self.position))
-
-        if not self.validate():
-            self.parse_name()
-        logger.debug('output: {}'.format(self.output()))
+        logger.debug('Rename output: {}'.format(self.output()))
 
     def components(self):
         '''
@@ -337,7 +412,7 @@ class RigName(NameBase):
 
         Returns boolean.
         '''
-        logger.debug('========== VALIDATE ==========')
+        #logger.debug('========== VALIDATE ==========')
         if self.full_name == self.output_fullname():
             return True
 
@@ -366,7 +441,7 @@ class RigName(NameBase):
                 if pos: pos = Position(pos)
             else:
                 logger.warning(f'Name {self.full_name} requires 7 components '\
-                    'following the naming convention:\n'\
+                    'following the name convention:\t'\
                     'side_region_element_controltype_rigtype_mayatype_position')
                 return False
 
@@ -375,7 +450,7 @@ class RigName(NameBase):
             for component in components:
                 if not component: continue # Allow component to be None
                 if not component.validate():
-                    logger.warning(f'Name component {component.name} is not valid')
+                    #logger.debug(f'Component name {component.name} is not valid')
                     return False
 
             # Check if full_name matches component_name
@@ -388,37 +463,44 @@ class RigName(NameBase):
                 self.rig_type = rig
                 self.maya_type = may
                 self.position = pos
+                self.full_name = self.output_fullname()
+                self.name = self.output()
                 return True
-            return False
 
-        else: # If not provided full_name, only provided components
-            components = self.components()
-            for component in components:
-                if not component: continue # Allow component to be None
-                name = component.name
+        # If provided components
+        components = self.components()
+        for component in components:
+            if not component: continue # Allow component to be None
+            name = component.name
+            # For non-Position component check that name is string
+            if not isinstance(component, Position):
+                if not isinstance(name, str):
+                    #logger.warning(f'{name} is not string')
+                    return False
                 # Check that each component has no special characters
                 if isinstance(component, Element):
                     if self.has_special_character(name, underscore=False):
-                        logger.warning(f'{name} contains special character')
+                        #logger.warning(f'{name} contains special character')
                         return False
                 else:
                     if self.has_special_character(name, underscore=True):
-                        logger.warning(f'{name} contains special character')
+                        #logger.warning(f'{name} contains special character')
                         return False
-                # Validate each component
-                if not component.validate():
-                    logger.warning(f'Name component {component.name} is not valid')
-                    return False
-            # Assign component_name to full_name
-            self.full_name = self.output_fullname()
-            return True
+            # Validate each component
+            if not component.validate():
+                #logger.debug(f'Component name {component.name} is not valid')
+                return False
+        # Assign component_name to full_name
+        self.full_name = self.output_fullname()
+        self.name = self.output()
+        return True
 
     def parse_name(self):
         '''
         Parse/format full_name and construct name components.
         Allow optional side, region, control_type, maya_type, position.
 
-        If both full_name and other name components are provided, full_name takes priority.
+        If both full_name and other name components are provided, component names take priority.
         Name components (Side, Region, Element, ControlType, RigType, MayaType, Position)
         will be overwritten by components of full_name.
 
@@ -433,51 +515,28 @@ class RigName(NameBase):
             maya_type: joint
             position: 01
         '''
-        logger.debug('========== PARSE_NAME ===========')
+        #logger.debug('========== PARSE_NAME ===========')
         components = self.components()
         full_name = self.full_name
 
-        if full_name: # If provided full name
+        if full_name: # If provided full name, try to parse full_name first
             if self.has_special_character(full_name):
-                logger.debug(f'Full name {full_name} contains special characters')
+                #logger.debug(f'Full name {full_name} contains special characters')
                 full_name = re.sub(r' ', '_', full_name) # Replace spaces with underscore
                 full_name = self.remove_special_character(full_name) # Remove special characters
 
-            if self.is_underscore(full_name.lower()): # Name is underscore format
-                full_name = full_name.lower()
-                logger.debug(f'{full_name} Full name converted to lowercase')
-            elif self.is_camelcase(full_name): # Name is camelcase format
+            if self.is_camelcase(full_name): # Name is camelcase format
                 full_name = self.camelcase_to_underscore(full_name)
-                logger.debug(f'{full_name} Full name converted from camelcase to underscore')
+            elif self.is_underscore(full_name): # Name is underscore format
+                pass
+            elif self.is_underscore(full_name.lower()):
+                full_name = full_name.lower()
             else: # Name is unidentified format
                 logger.error(f'Unknown joint naming convention. '\
                     'Name {full_name} needs to be in underscore format')
 
             # Split full name into segments to parse name types
             name_segments = full_name.split('_')
-            logger.debug(self.components())
-            # Reset components to override with full_name
-            if self.side:
-                logger.warning(f'Overriding Side name {self.side}. Reset to None')
-                self.side = None
-            if self.region:
-                logger.warning(f'Overriding Region name {self.region}. Reset to None')
-                self.region = None
-            if self.element:
-                logger.warning(f'Overriding Element name {self.element}. Reset to None')
-                self.element = None
-            if self.control_type:
-                logger.warning(f'Overriding ControlType name {self.control_type}. Reset to None')
-                self.control_type = None
-            if self.rig_type:
-                logger.warning(f'Overriding RigType name {self.rig_type}. Reset to None')
-                self.rig_type = None
-            if self.maya_type:
-                logger.warning(f'Overriding MayaType name {self.maya_type}. Reset to None')
-                self.maya_type = None
-            if self.position:
-                logger.warning(f'Overriding Position name {self.position}. Reset to None')
-                self.position = None
 
             if len(name_segments) == 0:
                 logger.error(f'Name {self.full_name} requires 7 components '\
@@ -533,9 +592,9 @@ class RigName(NameBase):
 
                 # Check if remaining name segments are valid element name
                 ele = Element('_'.join(seglist), parse=True)
-                logger.debug(f'Name segments: {name_segments}')
-                logger.debug(f'Seglist: {seglist}')
-                logger.debug(f'Element: {ele}')
+                #logger.debug(f'Name segments: {name_segments}')
+                #logger.debug(f'Seglist: {seglist}')
+                #logger.debug(f'Element: {ele}')
                 if ele.validate(): # Check if element is valid
                     self.element = ele
                 else:
@@ -552,77 +611,64 @@ class RigName(NameBase):
                 segfront = list()
                 segback = list()
                 # Create name component from parsed name segment
-                if sid:
-                    self.side = Side(sid, parse=True)
-                    if not self.side.validate():
-                        self.side = None
+                if sid and not self.side:
+                    name_sid = Side(sid, parse=True)
+                    if name_sid.validate():
+                        self.side = name_sid
+                    else:
                         segfront.append(sid)
-                if reg:
+                if reg and not self.region:
                     segfront.append(reg)
                     newlist = list()
                     for seg in segfront:
-                        if self.region:
-                            newlist.append(seg)
+                        name_reg = Region(seg, parse=True)
+                        if name_reg.validate():
+                            self.region = name_reg
                         else:
-                            component = Region(seg, parse=True)
-                            if component.validate():
-                                self.region = component
-                            else:
-                                self.region = None
-                                newlist.append(seg)
+                            newlist.append(seg)
                     segfront = newlist
-                if pos:
-                    self.position = Position(pos, parse=True)
-                    if not self.position.validate():
-                        self.position = None
+                if pos and not self.position:
+                    name_pos = Position(pos, parse=True)
+                    if name_pos.validate():
+                        self.position = name_pos
+                    else:
                         segback.append(pos)
-                if may:
+                if may and not self.maya_type:
                     segback.append(may)
                     newlist = list()
                     for seg in segback:
-                        if self.maya_type:
-                            newlist.append(seg)
+                        name_may = MayaType(seg, parse=True)
+                        if name_may.validate():
+                            self.maya_type = name_may
                         else:
-                            component = MayaType(seg, parse=True)
-                            if component.validate():
-                                self.maya_type = component
-                            else:
-                                self.maya_type = None
-                                newlist.append(seg)
+                            newlist.append(seg)
                     segback = newlist
                 if rig:
                     segback.append(rig)
                     newlist = list()
                     for seg in segback:
-                        if self.maya_type:
-                            newlist.append(seg)
+                        name_rig = RigType(seg, parse=True)
+                        if name_rig.validate():
+                            self.rig_type = name_rig
                         else:
-                            component = RigType(seg, parse=True)
-                            if component.validate():
-                                self.rig_type = component
-                            else:
-                                self.rig_type = None
-                                newlist.append(seg)
+                            newlist.append(seg)
                     segback = newlist
                 if con:
                     segback.append(con)
                     newlist = list()
                     for seg in segback:
-                        if self.control_type:
-                            newlist.append(seg)
+                        name_con = ControlType(seg, parse=True)
+                        if name_con.validate():
+                            self.control_type = name_con
                         else:
-                            component = ControlType(seg, parse=True)
-                            if component.validate():
-                                self.control_type = component
-                            else:
-                                self.control_type = None
-                                newlist.append(seg)
+                            newlist.append(seg)
                     segback = newlist
 
                 # Check if remaining name segments are valid element name
-                ele = '_'.join(segfront+segback)
+                ele = '_'.join(segfront+ele+segback)
+                #logger.debug(f'Element: {ele}')
                 ele = Element(ele, parse=True)
-                logger.debug(f'Element: {ele.output()}')
+                #logger.debug(f'Components: {self.components()}')
                 if ele.validate(): # Check if element is valid
                     self.element = ele
                 else:
@@ -632,36 +678,29 @@ class RigName(NameBase):
 
                 self.full_name = self.output_fullname()
                 self.name = self.output()
-                logger.debug('Done parsing name!\t'\
-                            f'Full name: {self.full_name}\t'\
-                            f'Name: {self.name}')
+                #logger.debug('Done parsing name!\t'\
+                #            f'Full name: {self.full_name}\t'\
+                #            f'Name: {self.name}')
 
-        else: # If provided name components
-
-            # Check that each name component is string without special characters
-            for component in components:
-                name = component.name
-                # For non-Position component check that name is string
-                if not isinstance(component, Position):
-                    if not isinstance(name, str):
-                        name = str(name)
-                    # For each component remove special characters
-                    if isinstance(component, Element):
-                        if self.has_special_character(name, underscore=False):
-                            logger.debug (f'Name component {name} contains special characters. '\
-                                'Removing special characters..')
-                            self.remove_special_character(name, underscore=False)
-                    else:
-                        if self.has_special_character(name, underscore=True):
-                            logger.warning(f'Name component {name} contains special characters. '\
-                                'Removing special characters..')
-                            self.remove_special_character(name, underscore=True)
-                # Check that each component is valid
-                if not component.validate():
-                    logger.debug(f'Parsing name for {name}..')
-                    component.parse_name()
-
-            self.full_name = '_'.join(c.output() for c in components)
+        # For provided name components
+        # Check that each name component is string without special characters
+        for component in components:
+            if not component: continue # Allow None
+            name = component.name
+            # For non-Position component check that name is string
+            if not isinstance(component, Position):
+                if not isinstance(name, str):
+                    name = str(name)
+                # For each component remove special characters
+                if isinstance(component, Element):
+                    if self.has_special_character(name, underscore=False):
+                        self.remove_special_character(name, underscore=False)
+                else:
+                    if self.has_special_character(name, underscore=True):
+                        self.remove_special_character(name, underscore=True)
+            # Check that each component is valid
+            if not component.validate():
+                component.parse_name()
 
         # Store new names
         self.full_name = self.output_fullname()
@@ -670,9 +709,9 @@ class RigName(NameBase):
         if not self.validate():
             logger.error(f'Failed to parse name {self.full_name}.\t'\
                 'Try renaming or inputting individual name components.')
-        logger.debug('Done parsing name!\t'\
-                    f'Full name: {self.full_name}\t'\
-                    f'Name: {self.name}')
+        # logger.debug('Done parsing name!\t'\
+        #             f'Full name: {self.full_name}\t'\
+        #             f'Name: {self.name}')
         return True
 
     def output(self):
@@ -682,9 +721,8 @@ class RigName(NameBase):
         Missing components are excluded from name.
         '''
         components = self.components()
-        regex = re.compile(r'_{2,}')
-        name = '_'.join(c.output() for c in components if c)
-        return regex.sub('_', name)
+        name = self.underscore_cleanup('_'.join(c.output() for c in components if c))
+        return name
 
     def output_fullname(self):
         '''
@@ -693,19 +731,55 @@ class RigName(NameBase):
         Missing components are left as empty spaces ''.
         '''
         components = self.components()
-        components = [c.output() for c in components if c]
-        logger.debug(components)
-        return '_'.join(components)
+        name = self.underscore_cleanup('_'.join(c.output() for c in components if c))
+        if self.prefix:
+            return f'{self.prefix}|{name}'
+        return name
+
+    def replace_fullname(self, full_name):
+        self.full_name = full_name
+        if not self.validate():
+            self.parse_name()
+        return self.name
+
+    def replace_component(self, component):
+        logger.debug(f'Replace component: {component}')
+        if isinstance(component, Side):
+            self.side = component
+        elif isinstance(component, Region):
+            self.region = component
+        elif isinstance(component, Element):
+            self.element = component
+        elif isinstance(component, ControlType):
+            self.control_type = component
+        elif isinstance(component, RigType):
+            self.rig_type = component
+        elif isinstance(component, MayaType):
+            self.maya_type = component
+        elif isinstance(component, Position):
+            self.position = component
+        else:
+            logger.warning(f'Failed to replace component {component}. Current name: {self.name}')
+            return self.name
+
+        if not component.validate():
+            component.parse_name()
+        self.full_name = self.output_fullname()
+        self.name = self.output()
+        logger.debug(f'New name: {self.name}')
+        return self.name
 
     @staticmethod
     def is_underscore(name):
         if name.islower() and '_' in name:
             return True
+        return False
 
     @staticmethod
     def is_camelcase(name):
-        if not name.islower() and not name.isupper() and '_' not in name:
+        if not name.islower() and not name.isupper():
             return True
+        return False
 
     @staticmethod
     def camelcase_to_underscore(name):
@@ -720,19 +794,24 @@ class RigName(NameBase):
         return ''.join(x.title() for x in name.split('_'))
 
     @staticmethod
+    def underscore_cleanup(name):
+        regex = re.compile(r'_{2,}')
+        return regex.sub('_', name)
+
+    @staticmethod
     def has_special_character(name, underscore=False):
         if underscore:
-            special_chara = re.compile('[@ !#$%^&*()<>?/\|}{~:]_')
+            special_chara = re.compile('[@ !#$%^&*()<>?/\}{~:]_')
         else:
-            special_chara = re.compile('[@ !#$%^&*()<>?/\|}{~:]')
+            special_chara = re.compile('[@ !#$%^&*()<>?/\}{~:]')
         return special_chara.search(name)
 
     @staticmethod
     def remove_special_character(name, underscore=False):
         if underscore:
-            special_chara = re.compile('[@ !#$%^&*()<>?/\|}{~:]_')
+            special_chara = re.compile('[@ !#$%^&*()<>?/\}{~:]_')
         else:
-            special_chara = re.compile('[@ !#$%^&*()<>?/\|}{~:]')
+            special_chara = re.compile('[@ !#$%^&*()<>?/\}{~:]')
         return re.sub(special_chara, '', name).strip('_')
 
 
@@ -753,13 +832,16 @@ def test():
     logger.debug('--- test1 ---')
     logger.debug(f'Full name: {test1.full_name}')
     logger.debug(f'Name: {test1.name}')
+    logger.debug(f'{test1}')
 
     test2 = RigName(full_name = 'lt_front_arm_ik_ctrl_curve_20')
     logger.debug('--- test2 ---')
     logger.debug(f'Full name: {test2.full_name}')
     logger.debug(f'Name: {test2.name}')
+    logger.debug(f'{test2}')
 
     test3 = RigName(full_name = 'LeftHandIndex1')
     logger.debug('--- test3 ---')
     logger.debug(f'Full name: {test3.full_name}')
     logger.debug(f'Name: {test3.name}')
+    logger.debug(f'{test3}')
