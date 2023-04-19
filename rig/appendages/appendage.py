@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 import logging
-logger = logging.getLogger(__name__)
 import maya.cmds as mc
 import adv_scripting.rig_name as rn
 import adv_scripting.matrix_tools as mt
+
+logger = logging.getLogger()
 
 class Appendage(ABC):
     def __init__(self, appendage_name, start_joint, input_matrix=None):
@@ -44,18 +45,19 @@ class Appendage(ABC):
         Sets up basic groups for appendage (parent/appendage group, controls, input and output groups)
         '''
         self.appendage_grp = mc.createNode('transform', name=rn.RigName(
-                                                                    element=self.appendage_name,
-                                                                    rig_type='grp'))
+                                                        element=self.appendage_name,
+                                                        rig_type='grp'))
         self.controls_grp = mc.createNode('transform', name=rn.RigName(
-                                                                    element='controls',
-                                                                    rig_type='grp'))
+                                                        element='controls',
+                                                        rig_type='grp'))
         self.input = mc.createNode('transform', name=rn.RigName(
-                                                                    element='input',
-                                                                    rig_type='grp'))
+                                                        element='input',
+                                                        rig_type='grp'))
         mc.addAttr(self.input, longName='input_matrix', attributeType='matrix')
 
-        self.output = mc.createNode('transform', name=rn.RigName(element='output',
-                                                                    rig_type='grp'))
+        self.output = mc.createNode('transform', name=rn.RigName(
+                                                        element='output',
+                                                        rig_type='grp'))
         # mc.addAttr(self.output, longName='start_joint_matrix', attributeType='matrix')
 
     @abstractmethod

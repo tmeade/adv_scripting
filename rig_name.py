@@ -303,7 +303,7 @@ class RigName(NameBase):
             self.full_name = longname[1]
         if side:
             if isinstance(side, Side): self.side = side
-            else: self.side = side
+            else: self.side = Side(side)
         else: self.side = None
         if region:
             if isinstance(region, Region): self.region = region
@@ -731,6 +731,7 @@ class RigName(NameBase):
         Missing components are left as empty spaces ''.
         '''
         components = self.components()
+        logger.debug(components)
         name = self.underscore_cleanup('_'.join(c.output() for c in components if c))
         if self.prefix:
             return f'{self.prefix}|{name}'
