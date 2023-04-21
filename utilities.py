@@ -23,7 +23,7 @@ def create_fk_control(joint):
     cmds.setAttr(joint+'.jointOrient', 0,0,0)
 
 
-def rename_hierarchy(joint, end_joint=None):
+def rename_hierarchy(joint, end_joint=None, unlock=True):
     '''
     Rename hierarchy from joint to end_joint.
     Ensures names follow naming convention in RigName.
@@ -31,19 +31,22 @@ def rename_hierarchy(joint, end_joint=None):
     Arguments
     joint (str): joint name
     end_joint (str): end joint name
+    unlock (bool): unlock all attributes
 
     Returns
     joint_map (dict) (str->RigName): mapping of joint name to RigName
     '''
     joint_map = dict()
     parent = cmds.listRelatives(joint, p=True)
-    if parent:
-        cmds.parent(joint, w=True) # Move joint to world to avoid prefix
+    if parent: # Move joint to world to avoid prefix
+        cmds.parent(joint, w=True)
     jnt = rn.RigName(joint) # Create RigName for joint
     cmds.rename(joint, jnt.name)
     joint_map[jnt.name] = jnt
-    if parent:
-        cmds.parent(jnt.name, parent) # Move joint back under parent
+    if unlock: # Unlock attributes
+        unlock_all(jnt.name)
+    if parent: # Move joint back under parent
+        cmds.parent(jnt.name, parent)
 
     if joint != end_joint:
         children = cmds.listRelatives(jnt.name) or []
@@ -144,8 +147,19 @@ def create_control_joints_from_skeleton(start_joint,
     logger.debug(joint_map)
 
     start_jnt = joint_map[0]
+    middle_jnt = None
     end_jnt = joint_map[-1]
-    middle_jnt = joint_map[(len(joint_map)-1)//2]
+    if num_upperTwist_joints == 0:
+        if num_lowerTwist_joint==0:
+            middle_jnt = joint_map[(len(joint_map)-1)//2]
+        elif num_lowerTwist_joints > 0 and num_lowerTwist_joints < len(joint_map):
+            middle_jnt = joint_map[len(joint_map)-num_lowerTwist_joints-2]
+        else:
+            logger.error('num_lowerTwist_joints {num_lowerTwist_joints} not valid')
+    elif num_upperTwist_joints > 0 and num_upperTwist_joints < len(joint_map):
+        middle_jnt = joint_map[num_upperTwist_joints+1]
+    else:
+        logger.error('num_upperTwist_joints {num_upperTwist_joints} not valid')
 
     # Create control hierarchy
     cmds.parent(end_jnt, middle_jnt)
@@ -158,6 +172,83 @@ def create_control_joints_from_skeleton(start_joint,
     control_jnt = [start_jnt, middle_jnt, end_jnt]
     logger.debug(f'control joints: {control_jnt}')
     return control_jnt
+
+
+def unlock_all(node):
+    '''
+    Unlock translate, rotation, scale
+    '''
+    for axis in 'XYZ':
+        # Unlock keyable attributes
+        for attribute in ['translate', 'rotate', 'scale', 'jointOrient']:
+            if cmds.attributeQuery(attribute+axis, node=node, exists=True):
+                attribute_name=f'{node}.{attribute}{axis}'
+                cmds.setAttr(attribute_name, k=True, lock=False)
+        # Unlock hidden attributes
+        for attribute in ['jointOrient', 'preferredAngle', 'stiffness']:
+            if cmds.attributeQuery(attribute+axis, node=node, exists=True):
+                attribute_name=f'{node}.{attribute}{axis}'
+                cmds.setAttr(attribute_name, k=False, lock=False)
+    # Remove transform limits
+    cmds.transformLimits(node, rm=True)
+    # Unlock visibility. Set visibility nonkeyable displayed
+    cmds.setAttr(f'{node}.visibility', k=False, cb=True, lock=False)
+
+def unlock_translate(node):
+    '''
+    Unlock translate
+    '''
+    for axis in 'XYZ':
+        if cmds.attributeQuery(f'translate{axis}', node=node, exists=True):
+            cmds.setAttr(f'{node}.translate{axis}', k=True, lock=False)
+    cmds.transformLimits(node, etx=(False,False), ety=(False,False), etz=(False,False))
+
+def unlock_rotate(node):
+    '''
+    Unlock rotation
+    '''
+    for axis in 'XYZ':
+        if cmds.attributeQuery(f'rotate{axis}', node=node, exists=True):
+            cmds.setAttr(f'{node}.rotate{axis}', k=True, lock=False)
+    cmds.transformLimits(node, erx=(False,False), ery=(False,False), erz=(False,False))
+
+def unlock_scale(node):
+    '''
+    Unlock scale
+    '''
+    for axis in 'XYZ':
+        if cmds.attributeQuery(f'scale{axis}', node=node, exists=True):
+            cmds.setAttr(f'{node}.scale{axis}', k=True, lock=False)
+    cmds.transformLimits(node, esx=(False,False), esy=(False,False), esz=(False,False))
+
+def lock_rotate(node, raxis='Z', limits=False):
+    '''
+    Lock rotation except on specified rotation axis, raxis.
+    If limits is True, set transform limits.
+    '''
+    if raxis not in 'XYZ':
+        logger.error('Specified axis must be X,Y,Z')
+    for axis in 'XYZ':
+        if axis == raxis: # Unlock raxis
+            if cmds.attributeQuery(f'rotate{axis}', node=node, exists=True):
+                cmds.setAttr(f'{node}.rotate{axis}', k=True, lock=False)
+            if limits: # Set transform limits
+                if axis == 'X':
+                    cmds.transformLimits(node,
+                        rx=(-180,180), ry=(0,0), rz=(0,0),
+                        erx=(True,True), ery=(True,True), erz=(True,True))
+                elif axis == 'Y':
+                    cmds.transformLimits(node,
+                        rx=(0,0), ry=(-180,180), rz=(0,0),
+                        erx=(True,True), ery=(True,True), erz=(True,True))
+                elif axis == 'Z':
+                    cmds.transformLimits(node,
+                        rx=(0,0), ry=(0,0), rz=(-180,180),
+                        erx=(True,True), ery=(True,True), erz=(True,True))
+        else: # Lock other axis
+            if cmds.attributeQuery(f'rotate{axis}', node=node, exists=True):
+                cmds.setAttr(f'{node}.rotate{axis}', k=True, lock=True)
+
 
 #Giryang utility
 def copy_rename_joint_hierarchy(joint, prefix):

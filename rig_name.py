@@ -342,7 +342,7 @@ class RigName(NameBase):
 
         if not self.validate():
             self.parse_name()
-        #logger.debug('RigName output: {}'.format(self.output()))
+        #logger.debug(f'RigName output(): {self.name}')
 
     def rename(self,
                 full_name=None,
@@ -422,7 +422,7 @@ class RigName(NameBase):
 
             # Check that full_name is underscore format
             if not self.is_underscore(self.full_name):
-                logger.warning(f'Name {self.full_name} needs to be in underscore format')
+                #logger.debug(f'Name {self.full_name} needs to be in underscore format')
                 return False
 
             name_segments = self.full_name.split('_')
@@ -440,9 +440,9 @@ class RigName(NameBase):
                 if may: may = MayaType(may)
                 if pos: pos = Position(pos)
             else:
-                logger.warning(f'Name {self.full_name} requires 7 components '\
-                    'following the name convention:\t'\
-                    'side_region_element_controltype_rigtype_mayatype_position')
+                #logger.debug(f'Name {self.full_name} requires 7 components '\
+                #    'following the name convention:\t'\
+                #    'side_region_element_controltype_rigtype_mayatype_position')
                 return False
 
             components = [sid, reg, ele, con, rig, may, pos]
@@ -539,7 +539,7 @@ class RigName(NameBase):
             name_segments = full_name.split('_')
 
             if len(name_segments) == 0:
-                logger.error(f'Name {self.full_name} requires 7 components '\
+                logger.error(f'len0/ Name {self.full_name} requires 7 components '\
                     'following the name convention:\t'\
                     'side_region_element_controltype_rigtype_mayatype_position')
 
@@ -547,7 +547,7 @@ class RigName(NameBase):
                 self.element = Element(name_segments[0], parse=True)
                 if not self.element.validate():
                     self.element = None
-                    logger.error('Failed to parse name.\t'\
+                    logger.error('len1/ Failed to parse name.\t'\
                                 f'Full name: {full_name}\t'\
                                 f'Name segments: {name_segments}')
 
@@ -590,17 +590,17 @@ class RigName(NameBase):
                             continue
                     seglist.append(seg)
 
-                # Check if remaining name segments are valid element name
-                ele = Element('_'.join(seglist), parse=True)
-                #logger.debug(f'Name segments: {name_segments}')
-                #logger.debug(f'Seglist: {seglist}')
-                #logger.debug(f'Element: {ele}')
-                if ele.validate(): # Check if element is valid
-                    self.element = ele
-                else:
-                    logger.error('Failed to parse name.\t'\
-                                f'Full name: {full_name}\t'\
-                                f'Name segments: {name_segments}')
+                if seglist:
+                    # Check if remaining name segments are valid element name
+                    ele = Element('_'.join(seglist), parse=True)
+                    if ele.validate(): # Check if element is valid
+                        self.element = ele
+                    else:
+                        logger.debug(f'Element: {ele}')
+                        logger.debug(f'Name segments: {name_segments}')
+                        logger.error('len-/ Failed to parse name.\t'\
+                                    f'Full name: {full_name}\t'\
+                                    f'Name segments: {name_segments}')
 
             elif len(name_segments) >= NUM_TYPES:
                 # Assume Naming convention:
@@ -666,13 +666,13 @@ class RigName(NameBase):
 
                 # Check if remaining name segments are valid element name
                 ele = '_'.join(segfront+ele+segback)
-                #logger.debug(f'Element: {ele}')
                 ele = Element(ele, parse=True)
-                #logger.debug(f'Components: {self.components()}')
                 if ele.validate(): # Check if element is valid
                     self.element = ele
                 else:
-                    logger.error('Failed to parse name.\t'\
+                    logger.debug(f'Element: {ele}')
+                    logger.debug(f'Components: {self.components()}')
+                    logger.error('len+/ Failed to parse name.\t'\
                                 f'Full name: {full_name}\t'\
                                 f'Name segments: {name_segments}')
 
@@ -731,7 +731,6 @@ class RigName(NameBase):
         Missing components are left as empty spaces ''.
         '''
         components = self.components()
-        logger.debug(components)
         name = self.underscore_cleanup('_'.join(c.output() for c in components if c))
         if self.prefix:
             return f'{self.prefix}|{name}'
