@@ -32,6 +32,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 	        # ball_joint
 	        # toe_end_joint
 	        # TODO: Validate/test that there is a parent joint here.
+	        self.upleg_joint = mc.listRelatives(self.bnd_joints['start_joint'])[0]
 	        self.ball_joint = mc.listRelatives(self.bnd_joints['end_joint'])[0]
 	        mc.addAttr(self.output, longName='ball_matrix', attributeType='matrix')
 	        self.bnd_joins['ball_matrix'] = self.ball_joint
@@ -39,35 +40,38 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 
     def build_leg(self):
         # Build foot rig ///reverse foot
-        self.ball_control =
+        self.ball_control = mc.createNode('transform', n=rig_name.RigName(side=self.side,
+                                                                                element='clavicle',
+                                                                                control_type='fk',
+                                                                                rig_type=rig_name.RigType('ctrl'),
+                                                                                maya_type='transform'))
+        matrix_tools.snap_offset_parent_matrix(self.ball_control, self.ball_joint)
+        matrix_tools.matrix_parent_constraint(  self.ball_control,
+                                                self.ball_joint,
+                                                connect_output=f'{self.output}.ball_matrix')
+
+
+
+
+'''
         cmds.duplicate(bnd_lt_ankle_bnd_jnt, rc = True)
 		# Unparent the duplicated joint
    	 	cmds.parent('lt_ankle_bnd_jnt1', world=True)
-
+'''
 
    	 	# I tried to build reverse foot manually but the end joint is not avaiable to rotate
+	
+	#duplicate ankle/ unparent / add "_rev"suffix / duplicate toe joint and renmae it heel / move back heel jnt
+	#parent heel joint to toe / select heel joint to reroot / 
+
+
 
 
     def connect_leg_output(self):
         mc.connectAttr(f'{self.output}.ball_matrix', f'{self.ball_joint}.offsetParentMatrix')
 
     def cleanup_leg(self):
-        mc.parent(self.clavicle_control, self.controls_grp)
-        mc.parent(self.fk_arm_controls[0], self.clavicle_control)
+        mc.parent(self.ball_control, self.controls_grp)
+        mc.parent(self.fk_arm_controls[0], self.ball_control)
 
 
-
-
-
-
-'''
-    for eachJoint in fkjoints:
-        # Create a NURBS circle
-        ctrlCircle = cmds.circle(name='ctrl_'+eachJoint, nr=(1,0,0), c=(0, 0, 0), r=1.5, n='Circle1_%s' % eachJoint)
-        # Create a NURBS circle offset grp
-        ctrloffset = mc.group(ctrlCircle[0], name=ctrlCircle[0] + "_offset")
-        # Match the circle to the joint using the snap_offset_parent_matrix function
-        mt.snap_offset_parent_matrix(ctrloffset, eachJoint)
-        # Create a matrix parent constraint between the joint and the circle
-        mt.matrix_parent_constraint(ctrloffset, eachJoint)
-'''
