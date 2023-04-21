@@ -6,24 +6,24 @@ Builds FK/IK for two-bone joint chain.
 
 import maya.cmds as mc
 import maya.api.OpenMaya as om
-import adv_scripting.rig_name as rn
-import adv_scripting.matrix_tools as mt
-import adv_scripting.rig.appendages.appendage as rap
-import adv_scripting.pole_vector as pv
-import adv_scripting.utilities as util
+import adv_scripting.rig_name as rig_name
+import adv_scripting.matrix_tools as matrix_tools
+import adv_scripting.rig.appendages.appendage as appendage
+import adv_scripting.pole_vector as pole_vector
+import adv_scripting.utilities as utils
 
 import logging
 logger = logging.getLogger(__name__)
 
 import importlib as il
-il.reload(rap)
-il.reload(mt)
-il.reload(pv)
-il.reload(rn)
-il.reload(util)
+il.reload(appendage)
+il.reload(matrix_tools)
+il.reload(pole_vector)
+il.reload(rig_name)
+il.reload(utils)
 
 
-class TwoBoneFKIK(rap.Appendage):
+class TwoBoneFKIK(appendage.Appendage):
     def __init__(self,
                  appendage_name,
                  start_joint,
@@ -34,7 +34,7 @@ class TwoBoneFKIK(rap.Appendage):
         self.num_lowerTwist_joints = num_lowerTwist_joint
         self.side = None
         self.element = None
-        rap.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
+        appendage.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
 
     def setup(self):
         # {'start_joint': lt_upArm_bnd_10, 'upTwist_01':lt_upArm_bnd_jnt_04, 'midle_joint': 'lt_loArm'}
@@ -55,16 +55,16 @@ class TwoBoneFKIK(rap.Appendage):
         self.bnd_joints['end_joint'] = skeleton[self.num_upperTwist_joints + self.num_lowerTwist_joints + 1]
 
         # Extract a control skeleton for the fk
-        self.fk_skeleton = util.create_control_joints_from_skeleton(self.bnd_joints['start_joint'],
+        self.fk_skeleton = utils.create_control_joints_from_skeleton(self.bnd_joints['start_joint'],
                                                                 self.bnd_joints['end_joint'],
-                                                                rn.ControlType('fk'),
+                                                                rig_name.ControlType('fk'),
                                                                 self.num_upperTwist_joints,
                                                                 self.num_lowerTwist_joints)
 
         # Extract a control skeleton for the ik
-        self.ik_skeleton = util.create_control_joints_from_skeleton( self.bnd_joints['start_joint'],
+        self.ik_skeleton = utils.create_control_joints_from_skeleton( self.bnd_joints['start_joint'],
                                                                 self.bnd_joints['end_joint'],
-                                                                rn.ControlType('ik'),
+                                                                rig_name.ControlType('ik'),
                                                                 self.num_upperTwist_joints,
                                                                 self.num_lowerTwist_joints)
 
@@ -78,8 +78,8 @@ class TwoBoneFKIK(rap.Appendage):
         for joint, joint_rn in self.fk_skeleton:
             name_fk_control = joint_rn.rename(rig_type='ctrl', maya_type='controller')
             fk_control = mc.createNode('transform', n=str(name_fk_control))
-            mt.snap_offset_parent_matrix(fk_control, joint)
-            mt.matrix_parent_constraint(fk_control, joint)
+            matrix_tools.snap_offset_parent_matrix(fk_control, joint)
+            matrix_tools.matrix_parent_constraint(fk_control, joint)
 
             mc.xform(joint, ro = [0, 0, 0], os=True)
             mc.setAttr(joint+'.jointOrient', 0,0,0)
@@ -88,7 +88,7 @@ class TwoBoneFKIK(rap.Appendage):
         for index in range(len(self.fk_arm_controls)):
             if index != 0:
                 mc.parent(self.fk_arm_controls[index], self.fk_arm_controls[index-1])
-                mt.matrix_parent_constraint(self.fk_arm_controls[index-1], self.fk_arm_controls[index])
+                matrix_tools.matrix_parent_constraint(self.fk_arm_controls[index-1], self.fk_arm_controls[index])
 
         #IK
         root, root_rn = self.ik_skeleton[0]
@@ -96,21 +96,21 @@ class TwoBoneFKIK(rap.Appendage):
         end, end_rn =  self.ik_skeleton[2]
         self.side = str(root_rn.side)
         self.element = str(root_rn.element)
-        name_ik_handle = rn.RigName(element=self.element, side=self.side,
+        name_ik_handle = rig_name.RigName(element=self.element, side=self.side,
             control_type='ik', rig_type='handle', maya_type='ikrpsolver')
-        name_ik_control = rn.RigName(element=self.element, side=self.side,
+        name_ik_control = rig_name.RigName(element=self.element, side=self.side,
             control_type='ik', rig_type='ctrl', maya_type='controller')
 
         #IK handle
         arm_ik_handle = mc.ikHandle(sj=root, ee=end, sol='ikRPsolver', n=str(name_ik_handle))[0]
         self.ik_control = mc.createNode('transform', n=str(name_ik_control))
-        mt.snap_offset_parent_matrix(self.ik_control, arm_ik_handle)
+        matrix_tools.snap_offset_parent_matrix(self.ik_control, arm_ik_handle)
         mc.parent(arm_ik_handle, self.ik_control)
 
         #pole vector
-        name_pv = rn.RigName(element=self.element, side=self.side,
+        name_pv = rig_name.RigName(element=self.element, side=self.side,
             control_type='ik', rig_type='pv', maya_type='controller')
-        pv_position = pv.calculate_pole_vector_position(root, mid, end)
+        pv_position = pole_vector.calculate_pole_vector_position(root, mid, end)
         self.arm_pv_control = mc.createNode('transform', n=str(name_pv))
         # TODO: place pole vector with offsetParentMatrix
         mc.move(pv_position.x, pv_position.y, pv_position.z, self.arm_pv_control)
@@ -118,7 +118,7 @@ class TwoBoneFKIK(rap.Appendage):
         mc.poleVectorConstraint(self.arm_pv_control, arm_ik_handle)
 
         # Create blended output
-        name_FKIK_switch = rn.RigName(element=self.element, side=self.side,
+        name_FKIK_switch = rig_name.RigName(element=self.element, side=self.side,
             control_type='switch', rig_type='grp')
         FKIK_switch = mc.createNode('transform', n=str(name_FKIK_switch))
         mc.addAttr(FKIK_switch, ln=('FKIK'), at='double', min=0, max=1, k=True)
