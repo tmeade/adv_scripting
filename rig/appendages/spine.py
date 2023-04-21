@@ -15,7 +15,6 @@ class Spine(rap.Appendage):
 
     def setup(self):
         # Get the selected joint
-        # Get the selected joint
         selected_joint = self.start_joint
         child_joint = cmds.listRelatives(selected_joint, ad=True, type="joint")
 
@@ -112,9 +111,10 @@ class Spine(rap.Appendage):
         # Delete "curve" groups and clean
         for group in groups_del:
             cmds.delete(group)
-        cmds.delete("pfxHair1")
-        cmds.delete("nucleus1")
-        cmds.delete("hairSystem1")
+        all_list = cmds.ls("*pfxHair*", "*nucleus*", "*hairSystem*")
+        ex_list = cmds.ls("*Follicles*")
+        del_for_clean = [x for x in all_list if x not in ex_list]
+        cmds.delete(del_for_clean)
 
         hairSys_hierarchy = cmds.listRelatives("hairSystem1Follicles", allDescendents=True,
                                              type='transform')  # override
