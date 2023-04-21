@@ -8,19 +8,25 @@ util.rename_skeleton_bnd('root')
 Test control skeleton setup / duplicating joints using
 util.create_control_joints_from_skeleton('lt_shoulder_bnd_jnt', 'lt_hand_bnd_jnt', 'fk', 1, 1)
 '''
-import adv_scripting.rig_name as rn
+import adv_scripting.rig_name as rig_name
+import adv_scripting.matrix_tools as matrix_tools
 import maya.cmds as cmds
 import logging
 
 logger = logging.getLogger()
 
-def create_fk_control(joint):
+import importlib as il
+il.reload(matrix_tools)
+
+def create_fk_control(joint, connect_output=None):
     fk_control = cmds.createNode('transform', n=f'{joint}'+'_fk_ctrl_transform')
-    mt.snap_offset_parent_matrix(fk_control, joint)
-    mt.matrix_parent_constraint(fk_control, joint)
+    matrix_tools.snap_offset_parent_matrix(fk_control, joint)
+    matrix_tools.matrix_parent_constraint(fk_control, joint, connect_output=connect_output)
 
     cmds.xform(joint, ro = [0, 0, 0], os=True)
     cmds.setAttr(joint+'.jointOrient', 0,0,0)
+
+    return fk_control
 
 
 def rename_hierarchy(joint, end_joint=None):
@@ -39,7 +45,7 @@ def rename_hierarchy(joint, end_joint=None):
     parent = cmds.listRelatives(joint, p=True)
     if parent:
         cmds.parent(joint, w=True) # Move joint to world to avoid prefix
-    jnt = rn.RigName(joint) # Create RigName for joint
+    jnt = rig_name.RigName(joint) # Create RigName for joint
     cmds.rename(joint, jnt.name)
     joint_map[jnt.name] = jnt
     if parent:
@@ -86,7 +92,7 @@ def replace_hierarchy(joint, end_joint=None,
         jnt_name = joint
 
     # Create RigName object and rename
-    jnt = rn.RigName(jnt_name)
+    jnt = rig_name.RigName(jnt_name)
     jnt.rename(full_name, side, region, element, control_type, rig_type, maya_type, position)
 
     # Check for duplicates
