@@ -158,3 +158,22 @@ def create_control_joints_from_skeleton(start_joint,
     control_jnt = [start_jnt, middle_jnt, end_jnt]
     logger.debug(f'control joints: {control_jnt}')
     return control_jnt
+
+#Giryang utility
+def copy_rename_joint_hierarchy(joint, prefix):
+    # Copy the joint
+    new_joint = mc.duplicate(joint, rc=True, n=prefix + joint)[0]
+
+    children = mc.listRelatives(joint, c=True, type="joint")
+    if children:
+        # Get all children of the copied joint
+        child_list = mc.listRelatives(joint, ad=True, type="joint")[::-1]
+
+        copied_child_list = mc.listRelatives(new_joint, ad=True, type="joint")[::-1]
+
+        # Rename each child *for make Unique name for each joints*
+        for child, copied in zip(child_list, copied_child_list):
+            new_name = prefix + child
+            mc.rename(copied, new_name)
+
+    return new_joint

@@ -2,203 +2,153 @@ import maya.cmds as mc
 import adv_scripting.rig_name as rn
 import adv_scripting.matrix_tools as mt
 import adv_scripting.rig.appendages.appendage as rap
+import adv_scripting.utilities as utils
 import logging
 import pymel.core as pm
+
 logger = logging.getLogger(__name__)
 
 
-import importlib as il
-il.reload(rap)
-il.reload(mt)
-
-# Just fix Typo #
-
-class Root(rap.Appendage):
-    def __init__(self, appendage_name, start_joint, input_matrix):
+class Spine(rap.Appendage):
+    def __init__(self, appendage_name, start_joint, input_matrix=None):
         rap.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
+
     def setup(self):
-        ### Select root first ###
+        # Get the selected joint
+        # Get the selected joint
+        selected_joint = self.start_joint
+        child_joint = mc.listRelatives(selected_joint, ad=True, type="joint")
 
-        def main():
-            dv_copied()
-            Delete_non_spine()
-            Unparent_and_clean_driver_joint()
-            ribbon_setup()
+        dv_prefix = "driver_"
 
+        # Copy and rename the joint hierarchy
+        dv_root_joint = utils.copy_rename_joint_hierarchy(selected_joint, dv_prefix)
 
-        # for adding prefix from original joints, it makes unique name for children.
-        def copy_rename_joint_hierarchy(joint, prefix):
-            # Copy the joint
-            new_joint = mc.duplicate(joint, rc=True, n=prefix + joint)[0]
+        # make list for ik, fk joints children
+        dvchild_list = mc.listRelatives(dv_root_joint, ad=True, type="joint")
 
-            children = mc.listRelatives(joint, c=True, type="joint")
-            if children:
-                # Get all children of the copied joint
-                child_list = mc.listRelatives(joint, ad=True, type="joint")[::-1]
+        children = mc.listRelatives(selected_joint, c=True, type="joint")
 
-                copied_child_list = mc.listRelatives(new_joint, ad=True, type="joint")[::-1]
+        # Get the hierarchy of the selected joints
+        joint_hierarchy = mc.listRelatives(dv_root_joint, allDescendents=True, type='joint')
 
-                # Rename each child *for make Unique name for each joints*
-                for child, copied in zip(child_list, copied_child_list):
-                    new_name = prefix + child
-                    mc.rename(copied, new_name)
+        # Select only the joints with "spine" in their name
+        spine_joints = [joint for joint in joint_hierarchy if 'spine' in joint]
 
-            return new_joint
+        # Delete non-spine joints
+        for joint in joint_hierarchy:
+            if joint not in spine_joints:
+                mc.delete(joint)
+        ik_spine_joints = utils.copy_rename_joint_hierarchy(dv_root_joint, "for_ik_")
+        mc.parent(ik_spine_joints, world=True)
+        ik_spine_joints_list = mc.ls(type='joint')
+        ik_spine_joints_list = [joint for joint in ik_spine_joints_list if 'for_ik_' in joint]
 
-        def dv_copied():
+        # list for Unparent
+        spine_joints_list = mc.listRelatives(dv_root_joint, ad=True, type='joint')
+        spine_joints_list.append(dv_root_joint)
 
-            # Get the selected joint
-            selectionCheck = mc.ls(sl=1, type="joint")
-            if not selectionCheck:
-                mc.warning("Please select a root joint.")
-            else:
-                selected_joint = mc.ls(sl=True)[0]
-                child_joint = mc.listRelatives(selected_joint, ad=True, type="joint")
+        # Unparent each joint in the hierarchy
+        mc.parent(spine_joints_list, world=True)
+        mc.delete("driver_spine_bnd_jnt_02")  # for other rig can delete  if list[x]%2 == true delete (list[1],list[3])
+        mc.delete("driver_spine_bnd_jnt_04")
 
-                dv_prefix = "driver_"
+        # Get the selected joint group
+        sel_joints = mc.ls(ik_spine_joints, type="joint")
+        # Get the hierarchy of the selected joints
+        joint_hierarchy = mc.listRelatives(sel_joints, allDescendents=True, type='joint')[::-1]
 
-                # Copy and rename the joint hierarchy
-                dv_root_joint = copy_rename_joint_hierarchy(selected_joint, dv_prefix)
+        # Get the first and last joints
+        start_joint = sel_joints[0]
+        end_joint = joint_hierarchy[-1]
 
-                # make list for ik, fk joints children
-                dvchild_list = mc.listRelatives(dv_root_joint, ad=True, type="joint")
+        # Create an IK handle for the spine
+        ik_handle = mc.ikHandle(startJoint=start_joint, endEffector=end_joint, ccv=True, scv=False,
+                                solver="ikSplineSolver")
 
-                children = mc.listRelatives(selected_joint, c=True, type="joint")
+        nn_ikhandle = mc.ls(ik_handle, type="ikHandle")
+        mc.delete(nn_ikhandle)
 
-        def Delete_non_spine():
+        # Get the original curve
+        orig_curve = mc.ls(ik_handle, type="transform")
 
-            # Get the selected joints
-            selected_joints = mc.ls(selection=True, type='joint')
+        # Duplicate the original curve
+        copy_curve = mc.duplicate(orig_curve)
 
-            # Get the hierarchy of the selected joints
-            joint_hierarchy = mc.listRelatives(selected_joints, allDescendents=True, type='joint')
+        # Translate the copy curve +3 on X-axis
+        mc.move(3, 0, 0, orig_curve, relative=True)
 
-            # Select only the joints with "spine" in their name
-            spine_joints = [joint for joint in joint_hierarchy if 'spine' in joint]
+        # Translate the copy curve -3 on X-axis
+        mc.move(-3, 0, 0, copy_curve, relative=True)
 
-            # Delete non-spine joints
-            for joint in joint_hierarchy:
-                if joint not in spine_joints:
-                    mc.delete(joint)
-            copy_rename_joint_hierarchy("driver_root", "for_ik_")
-            mc.parent("for_ik_driver_spine_1", world=True)
-            mc.delete("for_ik_driver_root")
+        # Make loft curve 1,2
+        curve_loft = mc.loft(copy_curve, orig_curve, ch=True, rn=True, ar=True)
 
-        def Unparent_and_clean_driver_joint():
-            # Unparent the joint hierarchy group
-            root_joint = mc.ls("driver_root", dag=True)
+        # save on valuable Joint Hierarchy
+        root_joint = mc.ls(ik_spine_joints, dag=True)
 
-            # Unparent each joint in the hierarchy
-            while mc.listRelatives(root_joint, children=True, type='joint') is not None:
-                children = mc.listRelatives(root_joint, children=True, type='joint')
-                mc.parent(children, world=True)
-            mc.delete("driver_root")
-            mc.delete("driver_spine_2")  # for other rig can delete  if list[x]%2 == true delete (list[1],list[3])
-            mc.delete("driver_spine_4")
+        # Unparent each joint in the hierarchy
+        while mc.listRelatives(root_joint, children=True, type='joint') is not None:
+            children = mc.listRelatives(root_joint, children=True, type='joint')
+            mc.parent(children, world=True)
 
-        def ribbon_setup():
-            # Get the selected joint group
-            sel_joints = mc.ls("for_ik_driver_spine_1", type="joint")
-            # Get the hierarchy of the selected joints
-            joint_hierarchy = mc.listRelatives(sel_joints, allDescendents=True, type='joint')[::-1]
+        # Clean curves, history
+        mc.delete(curve_loft, constructionHistory=True)
 
-            # Get the first and last joints
-            start_joint = sel_joints[0]
-            end_joint = joint_hierarchy[-1]
+        mc.delete(orig_curve)
+        mc.delete(copy_curve)
 
-            # Create an IK handle for the spine
-            ik_handle = mc.ikHandle(startJoint=start_joint, endEffector=end_joint, ccv=True, scv=False,
-                                    solver="ikSplineSolver")
-            mc.delete("ikHandle1")
+        # pymel for createHair command
+        mc.select(curve_loft[0], r=True)
+        pm.language.Mel.eval("createHair 1 5 10 0 0 1 0 5 0 1 1 1;")
+        created_hairsystem = pm.PyNode("hairSystem1")
 
-            # Get the original curve
-            orig_curve = "curve1"
+        # Get the hierarchy of the selected group
+        hairSys_hierarchy = mc.listRelatives("hairSystem1Follicles", allDescendents=True, type='transform')
 
-            # Duplicate the original curve
-            copy_curve = mc.duplicate(orig_curve)[0]
+        # Select only the groups with "curve" in their name
+        groups_del = [group for group in hairSys_hierarchy if 'curve' in group]
 
-            # Translate the copy curve +3 on X-axis
-            mc.move(3, 0, 0, orig_curve, relative=True)
+        # Delete "curve" groups and clean
+        for group in groups_del:
+            mc.delete(group)
+        mc.delete("pfxHair1")
+        mc.delete("nucleus1")
+        mc.delete("hairSystem1")
 
-            # Translate the copy curve -3 on X-axis
-            mc.move(-3, 0, 0, copy_curve, relative=True)
+        hairSys_hierarchy = mc.listRelatives("hairSystem1Follicles", allDescendents=True,
+                                             type='transform')  # override
 
-            # Make loft curve 1,2
-            mc.loft('curve2', 'curve1', ch=True, rn=True, ar=True)
+        follicle_ls = [follicle for follicle in hairSys_hierarchy if 'Shape' not in follicle]
 
-            # save on valuable Joint Heierarchy
-            root_joint = mc.ls("for_ik_driver_spine_1", dag=True)
+        for follicle, ikJ in zip(follicle_ls, ik_spine_joints_list):
+            mc.parent(ikJ, follicle)
+            mc.rename(follicle, "spine_follicle_1")
 
-            # Unparent each joint in the hierarchy
-            while mc.listRelatives(root_joint, children=True, type='joint') is not None:
-                children = mc.listRelatives(root_joint, children=True, type='joint')
-                mc.parent(children, world=True)
+        mc.select(cl=True)
 
-            # Clean curves, history
-            mc.delete("curve1")
-            mc.delete("curve2")
+        mc.select("driver_spine_bnd_jnt_01", "driver_spine_bnd_jnt_03", "driver_spine_bnd_jnt_05", curve_loft[0])
+        mc.skinCluster(n="ik_skinC")
+        mc.skinCluster("ik_skinC", e=True, mi=3)
 
-            mc.delete("loftedSurface1", constructionHistory=True)
+        mc.rename(curve_loft[0], "spineSetupSurface")
+        mc.setAttr("spineSetupSurface.visibility", False)
 
-            """# Make uvPin node, connect surface with joints.
-            mc.createNode("uvPin", n='hybridSpine_uvPin')
-            for joint, in zip(root_joint, 5):
-                mc.connectAttr"""
-            # uvpin's Output Matrix stop on the [0] cannot increase [1]..[2].. so, I just choose nhair-ribbon process
-
-            # pymel for createHair command
-            mc.select("loftedSurface1", r=True)
-            pm.language.Mel.eval("createHair 1 5 10 0 0 1 0 5 0 1 1 1;")
-            created_hairsystem = pm.PyNode("hairSystem1")
-
-            # Get the hierarchy of the selected group
-            hairSys_hierarchy = mc.listRelatives("hairSystem1Follicles", allDescendents=True, type='transform')
-
-            # Select only the groups with "curve" in their name
-            groups_del = [group for group in hairSys_hierarchy if 'curve' in group]
-
-            # Delete "curve" groups and clean
-            for group in groups_del:
-                mc.delete(group)
-            mc.delete("pfxHair1")
-            mc.delete("nucleus1")
-            mc.delete("hairSystem1")
-
-            hairSys_hierarchy = mc.listRelatives("hairSystem1Follicles", allDescendents=True,
-                                                 type='transform')  # override
-
-            follicle_ls = [follicle for follicle in hairSys_hierarchy if 'Shape' not in follicle]
-            ikJoint_ls = ["for_ik_driver_spine_1", "for_ik_driver_spine_2", "for_ik_driver_spine_3",
-                          "for_ik_driver_spine_4", "for_ik_driver_spine_5"]
-
-            for follicle, ikJ in zip(follicle_ls, ikJoint_ls):
-                mc.parent(ikJ, follicle)
-                mc.rename(follicle, "spine_follicle_1")
-
-            mc.select(cl=True)
-
-            mc.select("driver_spine_1", "driver_spine_3", "driver_spine_5", "loftedSurface1")
-            mc.skinCluster(n="ik_skinC")
-            mc.skinCluster("ik_skinC", e=True, mi=3)
-
-            mc.rename("loftedSurface1", "spineSetupSurface")
-            mc.setAttr("spineSetupSurface.visibility", False)
-
-        
         # No additional setup needed for setup()
         return
-
+    """
     def build(self):
         # Create a root control, place its offsetParentMatrix to the root joint and connect the
         # resulting matrix constraint to the start_matrix attribute on the output node.
         self.root_ctrl = mc.createNode('transform', name=rn.RigName(
-                                                            element='root',
-                                                            rig_type='ctrl',
-                                                            maya_type='transform'))
+            element='root',
+            rig_type='ctrl',
+            maya_type='transform'))
         mt.snap_offset_parent_matrix(self.root_ctrl, self.start_joint)
         mt.martix_parent_constraint(self.root_ctrl,
                                     self.start_joint,
                                     connect_output=f'{self.output}.start_matrix')
+        self.makeControls()
 
         def makeControls():
 
@@ -224,7 +174,8 @@ class Root(rap.Appendage):
                 controlPOS = mc.group(createControl[0], name=createControl[0] + "_offset")
                 mc.delete(createControl, constructionHistory=True)
                 mt.snap_offset_parent_matrix(controlPOS, controlDvJointlist)
-                mt.martix_parent_constraint(controlPOS, controlDvJointlist, connect_output=f'{self.output}.start_matrix')
+                mt.martix_parent_constraint(controlPOS, controlDvJointlist,
+                                            connect_output=f'{self.output}.start_matrix')
 
     def connect_outputs(self):
         # Connect the start matrix on the output node to the skeleton
@@ -233,4 +184,12 @@ class Root(rap.Appendage):
     def cleanup(self):
         # Parent the controls to the control group.
         mc.parent(self.root_ctrl, self.control_grp)
+        # for adding prefix from original joints, it makes unique name for children.
+    """
 
+
+"""    
+import adv_scripting.rig.appendages.spine as spine
+il.reload(spine)
+spine.setup("spine_bnd_jnt_01")
+"""
