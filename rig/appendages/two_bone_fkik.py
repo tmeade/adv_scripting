@@ -152,7 +152,7 @@ def blend_skeleton(fk_joint, ik_joint, switch_attribute, element=None, side=None
 
     fk, fk_rn = fk_joint
     ik, ik_rn = ik_joint
-    blend_name = rn.RigName(element=f'{element}_fkik',
+    blend_name = rig_name.RigName(element=f'{element}_fkik',
                                     side=side,
                                     rig_type='util',
                                     maya_type='blendcolors')

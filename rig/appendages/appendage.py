@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
-import maya.cmds as mc
-import adv_scripting.rig_name as rn
-import adv_scripting.matrix_tools as mt
+import maya.cmds as cmds
+import adv_scripting.rig_name as rig_name
 
 logger = logging.getLogger()
 
@@ -25,6 +24,8 @@ class Appendage(ABC):
         self.input_matrix = input_matrix
         # TODO: Maybe use a dict with fk/ik keys?
         self.controls = list()
+        self.skeleton = cmds.listRelatives(self.start_joint, ad=True)
+
 
         # Run methods
         self.create_appendage_container()
@@ -44,21 +45,20 @@ class Appendage(ABC):
         '''
         Sets up basic groups for appendage (parent/appendage group, controls, input and output groups)
         '''
-        self.appendage_grp = mc.createNode('transform', name=rn.RigName(
+        self.appendage_grp = cmds.createNode('transform', name=rig_name.RigName(
                                                         element=self.appendage_name,
                                                         rig_type='grp'))
-        self.controls_grp = mc.createNode('transform', name=rn.RigName(
+        self.controls_grp = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='controls',
                                                         rig_type='grp'))
-        self.input = mc.createNode('transform', name=rn.RigName(
+        self.input = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='input',
                                                         rig_type='grp'))
-        mc.addAttr(self.input, longName='input_matrix', attributeType='matrix')
+        cmds.addAttr(self.input, longName='input_matrix', attributeType='matrix')
 
-        self.output = mc.createNode('transform', name=rn.RigName(
+        self.output = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='output',
                                                         rig_type='grp'))
-        # mc.addAttr(self.output, longName='start_joint_matrix', attributeType='matrix')
 
     @abstractmethod
     def setup(self):
@@ -93,7 +93,7 @@ class Appendage(ABC):
         return
 
     def finish(self):
-        self.controls = mc.listRelatives(self.controls_grp)
-        mc.parent(self.controls_grp, self.appendage_grp)
-        mc.parent(self.input, self.appendage_grp)
-        mc.parent(self.output, self.appendage_grp)
+        self.controls = cmds.listRelatives(self.controls_grp)
+        cmds.parent(self.controls_grp, self.appendage_grp)
+        cmds.parent(self.input, self.appendage_grp)
+        cmds.parent(self.output, self.appendage_grp)
