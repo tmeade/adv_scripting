@@ -44,15 +44,9 @@ def rename_hierarchy(joint, end_joint=None, unlock=True):
     '''
     joint_map = dict()
     parent = cmds.listRelatives(joint, p=True)
-<<<<<<< HEAD
     if parent:
         cmds.parent(joint, w=True) # Move joint to world to avoid prefix
     jnt = rig_name.RigName(joint) # Create RigName for joint
-=======
-    if parent: # Move joint to world to avoid prefix
-        cmds.parent(joint, w=True)
-    jnt = rn.RigName(joint) # Create RigName for joint
->>>>>>> 5bf65ffb7ac0340ac236a5cd1c74dda95e34ba84
     cmds.rename(joint, jnt.name)
     joint_map[jnt.name] = jnt
     if unlock: # Unlock attributes
