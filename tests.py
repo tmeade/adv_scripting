@@ -1,8 +1,10 @@
 import unittest
 import maya.standalone
 maya.standalone.initialize()
+import maya.cmds as cmds
 
-import rig_name as rig_name
+import rig_name
+import utilities
 
 
 class TestRigName(unittest.TestCase):
@@ -28,10 +30,17 @@ class TestRigName(unittest.TestCase):
 
 class TestUtilities(unittest.TestCase):
     def setUp(self):
-        pass
+        self.joint = cmds.joint(p=(5, 5, 10))
+        self.control = utilities.create_fk_control(self.joint, connect_output=None)
+        self.position = cmds.xform(self.control, query=True, ws=True, t=True)
+        self.rotation = cmds.xform(self.control, query=True, ws=True, ro=True)
 
-    def test_create_fk_control(self):
-        pass
+    def test_create_fk_control_type(self):
+        self.assertTrue(cmds.nodeType(self.control), 'transform')
+
+    def test_create_fk_control_position(self):
+        self.assertEqual(self.position, [5, 5, 10])
+
 
 
 if __name__ == '__main__':
