@@ -29,9 +29,11 @@ class TwoBoneFKIK(appendage.Appendage):
                  start_joint,
                  num_upperTwist_joint,
                  num_lowerTwist_joint,
+                 control_to_local_orient=False,
                  input_matrix=None):
         self.num_upperTwist_joints = num_upperTwist_joint
         self.num_lowerTwist_joints = num_lowerTwist_joint
+        self.control_to_local_orient = control_to_local_orient
         self.side = None
         self.element = None
         appendage.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
@@ -107,6 +109,12 @@ class TwoBoneFKIK(appendage.Appendage):
         #IK handle
         arm_ik_handle = cmds.ikHandle(sj=root, ee=end, sol='ikRPsolver', n=str(name_ik_handle))[0]
         self.ik_control = cmds.createNode('transform', n=str(name_ik_control))
+
+        # Orient the control to the local joint.
+        # hrmmm??
+        if self.control_to_local_orient:
+            matrix_tools.snap_offset_parent_matrix(arm_ik_handle, end)
+
         matrix_tools.snap_offset_parent_matrix(self.ik_control, arm_ik_handle)
         cmds.parent(arm_ik_handle, self.ik_control)
 
