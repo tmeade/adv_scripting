@@ -4,7 +4,7 @@ anm355 Advanced Scripting
 
 Naming convention:
 side_region_element_controltype_rigtype_mayatype_position
-e.g. lt_front_arm_ik_ctrl_curve_01
+e.g. lt_front_arm_ik_ctrl_nurbscurve_01
 '''
 import maya.cmds as mc
 import logging
@@ -824,17 +824,17 @@ def test():
     logger.debug(f"{RigType('ctrl')}")
     logger.debug(f"{MayaType('joint')}")
     logger.debug(f"{Position(20)}")
-    logger.debug(f"{RigName(full_name = 'lt_front_arm_ik_ctrl_curve_20')}")
+    logger.debug(f"{RigName(full_name = 'lt_front_arm_ik_ctrl_nurbscurve_20')}")
 
     side_type = Side('lt')
 
-    test1 = RigName(side=side_type, region='front', element='arm', control_type='ik', rig_type=RigType('ctrl'), maya_type='curve', position=20)
+    test1 = RigName(side=side_type, region='front', element='arm', control_type='ik', rig_type=RigType('ctrl'), maya_type='nurbscurve', position=20)
     logger.debug('--- test1 ---')
     logger.debug(f'Full name: {test1.full_name}')
     logger.debug(f'Name: {test1.name}')
     logger.debug(f'{test1}')
 
-    test2 = RigName(full_name = 'lt_front_arm_ik_ctrl_curve_20')
+    test2 = RigName(full_name = 'lt_front_arm_ik_ctrl_nurbscurve_20')
     logger.debug('--- test2 ---')
     logger.debug(f'Full name: {test2.full_name}')
     logger.debug(f'Name: {test2.name}')
