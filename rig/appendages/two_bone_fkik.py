@@ -4,7 +4,7 @@ two_bone_fkik.py
 Builds FK/IK for two-bone joint chain.
 '''
 
-import maya.cmds as mc
+import maya.cmds as cmds
 import maya.api.OpenMaya as om
 import adv_scripting.rig_name as rig_name
 import adv_scripting.matrix_tools as matrix_tools
@@ -38,7 +38,7 @@ class TwoBoneFKIK(appendage.Appendage):
 
     def setup(self):
         # {'start_joint': lt_upArm_bnd_10, 'upTwist_01':lt_upArm_bnd_jnt_04, 'midle_joint': 'lt_loArm'}
-        skeleton = mc.listRelatives(self.start_joint, ad=True)
+        skeleton = cmds.listRelatives(self.start_joint, ad=True)
         skeleton.reverse()
 
         # build dictionary of bind joints using the start joint and number of twist joints to
@@ -70,24 +70,27 @@ class TwoBoneFKIK(appendage.Appendage):
 
         # Add a matrix attribute to represent each bnd joint on the output node
         for joint_name in self.bnd_joints.keys():
-            mc.addAttr(self.output, longName=f'{joint_name}_matrix', attributeType='matrix')
+            cmds.addAttr(self.output, longName=f'{joint_name}_matrix', attributeType='matrix')
 
     def build(self):
         #FK
         self.fk_arm_controls = list()
         for joint, joint_rn in self.fk_skeleton:
-            name_fk_control = joint_rn.rename(rig_type='ctrl', maya_type='controller')
-            fk_control = mc.createNode('transform', n=str(name_fk_control))
+            self.side = str(joint_rn.side)
+            self.element = str(joint_rn.element)
+            self.region = str(joint_rn.region)
+            name_fk_control = rig_name.RigName(element=self.element, side=self.side, region=self.region,  control_type='fk', rig_type='ctrl', maya_type='controller')
+            fk_control = cmds.createNode('transform', n=str(name_fk_control))
             matrix_tools.snap_offset_parent_matrix(fk_control, joint)
             matrix_tools.matrix_parent_constraint(fk_control, joint)
 
-            mc.xform(joint, ro = [0, 0, 0], os=True)
-            mc.setAttr(joint+'.jointOrient', 0,0,0)
+            cmds.xform(joint, ro = [0, 0, 0], os=True)
+            cmds.setAttr(joint+'.jointOrient', 0,0,0)
             self.fk_arm_controls.append(fk_control)
 
         for index in range(len(self.fk_arm_controls)):
             if index != 0:
-                mc.parent(self.fk_arm_controls[index], self.fk_arm_controls[index-1])
+                cmds.parent(self.fk_arm_controls[index], self.fk_arm_controls[index-1])
                 matrix_tools.matrix_parent_constraint(self.fk_arm_controls[index-1], self.fk_arm_controls[index])
 
         #IK
@@ -102,26 +105,27 @@ class TwoBoneFKIK(appendage.Appendage):
             control_type='ik', rig_type='ctrl', maya_type='controller')
 
         #IK handle
-        arm_ik_handle = mc.ikHandle(sj=root, ee=end, sol='ikRPsolver', n=str(name_ik_handle))[0]
-        self.ik_control = mc.createNode('transform', n=str(name_ik_control))
+        arm_ik_handle = cmds.ikHandle(sj=root, ee=end, sol='ikRPsolver', n=str(name_ik_handle))[0]
+        self.ik_control = cmds.createNode('transform', n=str(name_ik_control))
         matrix_tools.snap_offset_parent_matrix(self.ik_control, arm_ik_handle)
-        mc.parent(arm_ik_handle, self.ik_control)
+        cmds.parent(arm_ik_handle, self.ik_control)
 
         #pole vector
         name_pv = rig_name.RigName(element=self.element, side=self.side,
             control_type='ik', rig_type='pv', maya_type='controller')
         pv_position = pole_vector.calculate_pole_vector_position(root, mid, end)
-        self.arm_pv_control = mc.createNode('transform', n=str(name_pv))
+        self.arm_pv_control = cmds.createNode('transform', n=str(name_pv))
         # TODO: place pole vector with offsetParentMatrix
-        mc.move(pv_position.x, pv_position.y, pv_position.z, self.arm_pv_control)
-        mc.makeIdentity(self.arm_pv_control, apply=True, t=True, r=True, s=True)
-        mc.poleVectorConstraint(self.arm_pv_control, arm_ik_handle)
+        cmds.move(pv_position.x, pv_position.y, pv_position.z, self.arm_pv_control)
+        cmds.makeIdentity(self.arm_pv_control, apply=True, t=True, r=True, s=True)
+        cmds.poleVectorConstraint(self.arm_pv_control, arm_ik_handle)
 
         # Create blended output
+         #TODO : twist joint blending
         name_FKIK_switch = rig_name.RigName(element=self.element, side=self.side,
             control_type='switch', rig_type='grp')
-        FKIK_switch = mc.createNode('transform', n=str(name_FKIK_switch))
-        mc.addAttr(FKIK_switch, ln=('FKIK'), at='double', min=0, max=1, k=True)
+        FKIK_switch = cmds.createNode('transform', n=str(name_FKIK_switch))
+        cmds.addAttr(FKIK_switch, ln=('FKIK'), at='double', min=0, max=1, k=True)
 
 
         result_matricies = list()
@@ -132,19 +136,27 @@ class TwoBoneFKIK(appendage.Appendage):
                                                    element=self.element,
                                                    side=self.side))
 
+        bnd_joints_list = [self.bnd_joints['start_joint'],self.bnd_joints['middle_joint'],self.bnd_joints['end_joint']]
+
+        for mult_matrix_node, bnd_jnt in zip(result_matricies,bnd_joints_list):
+            parent = cmds.listRelatives(bnd_jnt, parent=True)
+            cmds.connectAttr(f'{parent[0]}.worldInverseMatrix[0]', f'{mult_matrix_node}.matrixIn[1]')
+            key = get_keys_from_value(self.bnd_joints, bnd_jnt)
+            cmds.connectAttr(mult_matrix_node + '.matrixSum', f'{self.output}.{key[0]}_matrix')
+            cmds.xform(bnd_jnt, t = [0, 0, 0], os=True)
 
     def connect_outputs(self):
         # Connect the start matrix on the output node to the skeleton
         for key, joint_name in self.bnd_joints.items():
-            mc.connectAttr(f'{self.output}.{key}_matrix', f'{joint_name}.offsetParentMatrix')
+            cmds.connectAttr(f'{self.output}.{key}_matrix', f'{joint_name}.offsetParentMatrix')
 
     def cleanup(self):
         # Parent the controls to the control group.
-        mc.parent(self.fk_arm_controls[0], self.controls_grp)
-        mc.parent(self.ik_control, self.controls_grp)
-        mc.parent(self.arm_pv_control, self.controls_grp)
-        mc.parent(self.fk_skeleton[0][0], self.controls_grp)
-        mc.parent(self.ik_skeleton[0][0], self.controls_grp)
+        cmds.parent(self.fk_arm_controls[0], self.controls_grp)
+        cmds.parent(self.ik_control, self.controls_grp)
+        cmds.parent(self.arm_pv_control, self.controls_grp)
+        cmds.parent(self.fk_skeleton[0][0], self.controls_grp)
+        cmds.parent(self.ik_skeleton[0][0], self.controls_grp)
 
 
 def blend_skeleton(fk_joint, ik_joint, switch_attribute, element=None, side=None):
@@ -155,19 +167,21 @@ def blend_skeleton(fk_joint, ik_joint, switch_attribute, element=None, side=None
     blend_name = rig_name.RigName(element=f'{element}_fkik',
                                     side=side,
                                     rig_type='util',
-                                    maya_type='blendcolors')
+                                    maya_type='blendMatrix')
     logger.debug(blend_name.output())
-    blender = mc.createNode('blendColors', n=str(blend_name))
-    mc.connectAttr((ik + '.rotate'), (blender + '.color1'), f=True)
-    mc.connectAttr((fk + '.rotate'), (blender + '.color2'), f=True)
-    mc.connectAttr(switch_attribute, (blender + '.blender'), f=True)
+    blender = cmds.createNode('blendMatrix', n=str(blend_name))
+    cmds.connectAttr((fk + '.worldMatrix'), (blender + '.inputMatrix'), f=True)
+    cmds.connectAttr((ik + '.worldMatrix'), (blender + '.target[0].targetMatrix'), f=True)
+    cmds.connectAttr(switch_attribute, (blender + '.envelope'), f=True)
 
     # compose matrix
-    result_matrix = mc.createNode('composeMatrix')
-    mc.connectAttr((blender + '.output'), (result_matrix + '.inputRotate'), f=True)
+    result_matrix = cmds.createNode('multMatrix')
+    cmds.connectAttr((blender + '.outputMatrix'), (result_matrix +'.matrixIn[0]'), f=True)
 
     return result_matrix
 
+def get_keys_from_value(dictionary, val):
+    return [k for k, v in dictionary.items() if v == val]
 
 '''
 import adv_scripting.rig.appendages.two_bone_fkik as twoB
