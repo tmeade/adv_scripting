@@ -341,7 +341,7 @@ def lock_rotate(node, raxis='Z', limits=False):
                 cmds.setAttr(f'{node}.rotate{axis}', k=True, lock=True)
 
 
-# GIRYANG'S COPY RENAME JOINT HIERARCHY ================================
+# GIRYANG'S JOINT UTILITIES ============================================
 
 def copy_rename_joint_hierarchy(joint, prefix):
     # Copy the joint
