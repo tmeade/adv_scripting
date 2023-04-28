@@ -20,7 +20,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 											appendage_name,
 											start_joint,
 											num_upleg_joint,
-											num_lowleg_joint
+											num_lowleg_joint,
 											num_ankle_joint,
 											input_matrix)
   		self.side = side
@@ -58,11 +58,10 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		self.upleg_joint = cmds.listRelatives(self.bnd_joints['start_joint'])[0]
 		self.bnd_joints['upleg_matrix'] = self.upleg_joint
 		self.bnd_joints['ankle_joint'] = self.skeleton[self.num_upleg_joints + 4]
-
-	    self.rev_joints = dict()
+		'''
+		self.rev_joints = dict()
 	    self.ankle_joint = cmds.listRelatives(self.rev_joints['start_joint'])[0]
         self.rev_joints['toe_joint'] = self.skeleton[self.num_ankle_joints + 2]
-		'''
 
 
 	   # Extract a control skeleton for the fk
@@ -132,7 +131,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
         leg_pv = rig_name.RigName(element=self.element, side=self.side,
             control_type='ik', rig_type='pv', maya_type='controller')
         pv_position = pole_vector.calculate_pole_vector_position(root, mid, end)
-        self.arm_pv_control = mc.createNode('transform', n=str(name_pv))
+        self.arm_pv_control = cmds.createNode('transform', n=str(name_pv))
 
 
         cmds.move(pv_position.x, pv_position.y, pv_position.z, self.arm_pv_control)
@@ -145,6 +144,10 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		#move back heel jnt (how to calculate the length? just type num in z? what if unit sizes are different)
 		#parent heel joint to toe / select heel joint to reroot / 
 
+	
+        toe, toe_rn =  self.rev_skeleton[2]
+        cmds.duplicate(self.rev_skeleton[2])
+	
 		# Unparent the duplicated joint
 		cmds.parent(self.self.rev_skeleton)
 
@@ -163,4 +166,4 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
         cmds.parent(self.fk_arm_controls[0], self.upleg_control)
 
 
-'''
+        
