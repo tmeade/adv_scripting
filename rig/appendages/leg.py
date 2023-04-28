@@ -36,7 +36,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 	        # toe_end_joint
 	        # TODO: Validate/test that there is a parent joint here.
 
-	    skeleton = mc.listRelatives(self.start_joint, ad=True)
+	    skeleton = cmds.listRelatives(self.start_joint, ad=True)
 	    skeleton.reverse()
 
 
@@ -55,12 +55,12 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
         self.bnd_joints['end_joint'] = skeleton[self.num_upleg_joint + self.num_lowleg_joint + 1]
 
 		'''
-		self.upleg_joint = mc.listRelatives(self.bnd_joints['start_joint'])[0]
+		self.upleg_joint = cmds.listRelatives(self.bnd_joints['start_joint'])[0]
 		self.bnd_joints['upleg_matrix'] = self.upleg_joint
 		self.bnd_joints['ankle_joint'] = self.skeleton[self.num_upleg_joints + 4]
 
 	    self.rev_joints = dict()
-	    self.ankle_joint = mc.listRelatives(self.rev_joints['start_joint'])[0]
+	    self.ankle_joint = cmds.listRelatives(self.rev_joints['start_joint'])[0]
         self.rev_joints['toe_joint'] = self.skeleton[self.num_ankle_joints + 2]
 		'''
 
@@ -90,7 +90,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
         # Build foot rig ///reverse foot
 
    
-        self.fk_upleg_control = mc.createNode('transform', n=rig_name.RigName(side=self.side,
+        self.fk_upleg_control = cmds.createNode('transform', n=rig_name.RigName(side=self.side,
                                                                                 element='upleg',
                                                                                 control_type='fk',
                                                                                 rig_type=rig_name.RigType('ctrl'),
@@ -99,8 +99,8 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
         matrix_tools.matrix_parent_constraint(self.upleg_control,
                                               self.upleg_joint,
                                               onnect_output=f'{self.output}.upleg_matrix')
-        mc.xform(self.leg_joint, ro = [0, 0, 0], os=True)
-        mc.setAttr(f'{self.leg_joint}.jointOrient', 0,0,0)
+        cmds.xform(self.leg_joint, ro = [0, 0, 0], os=True)
+        cmds.setAttr(f'{self.leg_joint}.jointOrient', 0,0,0)
         self.fk_leg_controls.append(self.upleg_control)
        
 
@@ -123,10 +123,10 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
             control_type='ik', rig_type='ctrl', maya_type='controller')
 
  		#IK handle
-        leg_ik_handle = mc.ikHandle(sj=root, ee=end, sol='ikRPsolver', n=str(name_ik_handle))[0]
-        self.ik_control = mc.createNode('transform', n=str(name_ik_control))
+        leg_ik_handle = cmds.ikHandle(sj=root, ee=end, sol='ikRPsolver', n=str(name_ik_handle))[0]
+        self.ik_control = cmds.createNode('transform', n=str(name_ik_control))
         matrix_tools.snap_offset_parent_matrix(self.ik_control, leg_ik_handle)
-        mc.parent(leg_ik_handle, self.ik_control)
+        cmds.parent(leg_ik_handle, self.ik_control)
 
         #pole vector
         leg_pv = rig_name.RigName(element=self.element, side=self.side,
@@ -135,9 +135,9 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
         self.arm_pv_control = mc.createNode('transform', n=str(name_pv))
 
 
-        mc.move(pv_position.x, pv_position.y, pv_position.z, self.arm_pv_control)
-        mc.makeIdentity(self.arm_pv_control, apply=True, t=True, r=True, s=True)
-        mc.poleVectorConstraint(self.leg_pv_control, leg_ik_handle)
+        cmds.move(pv_position.x, pv_position.y, pv_position.z, self.arm_pv_control)
+        cmds.makeIdentity(self.arm_pv_control, apply=True, t=True, r=True, s=True)
+        cmds.poleVectorConstraint(self.leg_pv_control, leg_ik_handle)
 
         #rev
 
@@ -156,10 +156,11 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 
 
     def connect_leg_output(self):
-        mc.connectAttr(f'{self.output}.upleg_matrix', f'{self.upleg_joint}.offsetParentMatrix')
+        cmds.connectAttr(f'{self.output}.upleg_matrix', f'{self.upleg_joint}.offsetParentMatrix')
 
     def cleanup_leg(self):
-        mc.parent(self.upleg_control, self.controls_grp)
-        mc.parent(self.fk_arm_controls[0], self.upleg_control)
+        cmds.parent(self.upleg_control, self.controls_grp)
+        cmds.parent(self.fk_arm_controls[0], self.upleg_control)
 
 
+'''
