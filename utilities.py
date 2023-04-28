@@ -259,18 +259,32 @@ def lock_rotate(node, raxis='Z', limits=False):
 #Giryang utility
 def copy_rename_joint_hierarchy(joint, prefix):
     # Copy the joint
-    new_joint = mc.duplicate(joint, rc=True, n=prefix + joint)[0]
+    new_joint = cmds.duplicate(joint, rc=True, n=prefix + joint)[0]
 
-    children = mc.listRelatives(joint, c=True, type="joint")
+    children = cmds.listRelatives(joint, c=True, type="joint")
     if children:
         # Get all children of the copied joint
-        child_list = mc.listRelatives(joint, ad=True, type="joint")[::-1]
+        child_list = cmds.listRelatives(joint, ad=True, type="joint")[::-1]
 
-        copied_child_list = mc.listRelatives(new_joint, ad=True, type="joint")[::-1]
+        copied_child_list = cmds.listRelatives(new_joint, ad=True, type="joint")[::-1]
 
         # Rename each child *for make Unique name for each joints*
         for child, copied in zip(child_list, copied_child_list):
             new_name = prefix + child
-            mc.rename(copied, new_name)
+            cmds.rename(copied, new_name)
 
     return new_joint
+
+def delete_useless_joint(root, keyword):
+    # Get the hierarchy of the selected joints
+    joint_hierarchy = cmds.listRelatives(root, allDescendents=True, type='joint')
+
+    # Select only the joints with "spine" in their name
+    element_joints = [joint for joint in joint_hierarchy if keyword in joint]
+
+    # Delete non-spine joints
+    for joint in joint_hierarchy:
+        if joint not in element_joints:
+            cmds.delete(joint)
+
+    return
