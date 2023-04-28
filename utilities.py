@@ -217,30 +217,49 @@ def get_joint_twobone_default(jnt_list):
 def create_control_joints_from_skeleton(start_joint,
                                         end_joint,
                                         control_type,
-                                        num_upperTwist_joints,
-                                        num_lowerTwist_joints):
+                                        num_upperTwist_joint,
+                                        num_lowerTwist_joint,
+                                        deleteTwist=True):
+    '''
+    Create control skeleton of control_type and
+    Create 3 control joints [start, middle, end] for two-bone ik.
+
+    Arguments
+    start_joint (str): name of start joint
+    end_joint (str): name of end joint
+    control_type (str): control type such as 'bnd', 'fk', 'ik'
+    num_upperTwist_joint (int/None): number of upperTwist joints
+    num_lowerTwist_joint (int/None): number of lowerTwist joints
+    deleteTwist (bool): delete twist joints / all non-control joints
+
+    Returns list [start, middle, end] joints.
+    Each item is a tuple of (<str name>, <rig_name.RigName object>)
+    '''
     # Duplicate the skeleton and parent it to the world
     skeleton = duplicate_skeleton(start_joint, end_joint, tag='COPY')
     cmds.parent(skeleton, w=True)
     print(skeleton)
 
-    # Rename the skeleton by replaceing 'bnd' with the control_type.
+    # Rename the skeleton by replacing 'bnd' with the control_type.
     joint_map = replace_hierarchy(skeleton, control_type=control_type, rig_type='jnt', tag='COPY')
     joint_map = list(joint_map.items())
-    logger.debug(joint_map)
+    #logger.debug(joint_map)
 
-    start_jnt, middle_jnt, end_jnt = get_joint_twobone(joint_map)
+    start_jnt, middle_jnt, end_jnt = get_joint_twobone(joint_map, num_upperTwist_joint, num_lowerTwist_joint)
 
     # Create control hierarchy
     cmds.parent(end_jnt, middle_jnt)
     cmds.parent(middle_jnt, start_jnt)
-
-    # Remove twist joints for now
-    cmds.delete(cmds.listRelatives(start_jnt)[0])
-    cmds.delete(cmds.listRelatives(middle_jnt)[0])
-
     control_jnt = [start_jnt, middle_jnt, end_jnt]
-    logger.debug(f'control joints: {control_jnt}')
+
+    if deleteTwist: # Remove twist joints for now
+        for joint in joint_map:
+            if joint not in control_jnt:
+                cmds.delete(joint[0])
+
+    logger.debug('Control Joints:')
+    for ctrl_jnt in control_jnt:
+        logger.debug(f'\t{ctrl_jnt}')
     return control_jnt
 
 
