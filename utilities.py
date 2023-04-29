@@ -147,6 +147,8 @@ def duplicate_skeleton(joint, end_joint=None, tag='COPY'):
 def get_joint_twobone(jnt_list, num_upperTwist_joint=None, num_lowerTwist_joint=None):
     '''
     Get start, middle, end joints for two-bone ik.
+    If upperTwist is None, start defaults to first element of jnt_list.
+    If lowerTwist is None, end defaults to last element of jnt_list.
 
     Arguments:
     jnt_list (str list) - List of all joints in a linear joint hierarchy
@@ -238,29 +240,109 @@ def create_control_joints_from_skeleton(start_joint,
     # Duplicate the skeleton and parent it to the world
     skeleton = duplicate_skeleton(start_joint, end_joint, tag='COPY')
     cmds.parent(skeleton, w=True)
-    print(skeleton)
 
     # Rename the skeleton by replacing 'bnd' with the control_type.
     joint_map = replace_hierarchy(skeleton, control_type=control_type, rig_type='jnt', tag='COPY')
     joint_map = list(joint_map.items())
     #logger.debug(joint_map)
 
-    start_jnt, middle_jnt, end_jnt = get_joint_twobone(joint_map, num_upperTwist_joint, num_lowerTwist_joint)
+    start, middle, end = get_joint_twobone(joint_map, num_upperTwist_joint, num_lowerTwist_joint)
 
     # Create control hierarchy
-    cmds.parent(end_jnt, middle_jnt)
-    cmds.parent(middle_jnt, start_jnt)
-    control_jnt = [start_jnt, middle_jnt, end_jnt]
+    middle_children = cmds.listRelatives(middle[0], c=True)
+    if end[0] not in middle_children:
+        cmds.parent(end[0], middle[0])
+    start_children = cmds.listRelatives(start[0], c=True)
+    if middle[0] not in start_children:
+        cmds.parent(middle[0], start[0])
+    control_jnt = [start, middle, end]
 
     if deleteTwist: # Remove twist joints for now
         for joint in joint_map:
-            if joint not in control_jnt:
+            if joint not in control_jnt and cmds.objExists(joint[0]):
                 cmds.delete(joint[0])
 
     logger.debug('Control Joints:')
     for ctrl_jnt in control_jnt:
         logger.debug(f'\t{ctrl_jnt}')
     return control_jnt
+
+
+# CREATE CONTROLS & TRANSFORMS =========================================
+
+def create_control(node, parent=None, size=1):
+    '''
+    Build a nurbs circle control at position of node.
+    Size determines circle's radius. Move control under parent if provided.
+
+    Arguments:
+    node (str): node to match transforms and position of control
+    parent (str): parent of control, if any
+    size (str): control radius
+
+    Returns name of created control.
+    '''
+    ctrl_rn = rig_name.RigName(node)
+    ctrl_rn.rename(rig_type='ctrl')
+    ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
+    #logger.debug(f'Created control: {ctrl}')
+    if parent:
+        cmds.parent(ctrl, parent)
+        # modify ctrl's transform to match parent
+        cmds.matchTransform(ctrl, parent, pos=1, rot=1, scl=1, piv=1)
+        # freeze transformations
+        cmds.makeIdentity(ctrl, apply=True, t=1, r=1, s=1, n=0)
+    # match ctrl's transform to node
+    matrix_tools.snap_offset_parent_matrix(ctrl, node)
+    return ctrl
+
+def create_control_copy(control, node, parent=None, size=1):
+    '''
+    Duplicate control object and match transforms to node.
+    Scale control object by size. Move control under parent if provided.
+
+    Arguments:
+    control (str): control object to duplicate
+    node (str): node to match transforms and position of control
+    parent (str): parent of control, if any
+    size (str): control scale
+
+    Returns name of created control.
+    '''
+    ctrl_rn = rig_name.RigName(node)
+    ctrl_rn.rename(rig_type='ctrl')
+    ctrl = cmds.duplicate(control, po=True, n=ctrl_rn.output())[0]
+    if size != 1:
+        cmds.xform(ctrl, r=True, s=(size, size, size))
+    #logger.debug(f'Created control: {ctrl}')
+    if parent:
+        cmds.parent(ctrl, parent)
+        # modify ctrl's transform to match parent
+        cmds.matchTransform(ctrl, parent, pos=1, rot=1, scl=1, piv=1)
+        # freeze transformations
+        cmds.makeIdentity(ctrl, apply=True, t=1, r=1, s=1, n=0)
+    # match ctrl's transform to node
+    matrix_tools.snap_offset_parent_matrix(ctrl, node)
+    return ctrl
+
+def create_group(node, parent=None):
+    '''
+    Build an empty group / transform at position of node.
+    Move group under parent if provided.
+    '''
+    grp_rn = rig_name.RigName(node)
+    grp_rn.rename(rig_type='grp', maya_type='transform')
+    grp = cmds.createNode('transform', n=grp_rn.output())
+    #logger.debug(f'Created group: {grp}')
+    if parent:
+        cmds.parent(grp, parent)
+        # modify grp's transform to match parent
+        cmds.matchTransform(grp, parent, pos=1, rot=1, scl=1, piv=1)
+        # freeze transformations
+        cmds.makeIdentity(grp, apply=True, t=1, r=1, s=1, n=0)
+    # match grp's transform to node
+    matrix_tools.snap_offset_parent_matrix(grp, node)
+    return grp
 
 
 # LOCK / UNLOCK ATTRIBUTES =============================================
