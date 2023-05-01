@@ -353,7 +353,7 @@ class RigName(NameBase):
                 rig_type=None,
                 maya_type=None,
                 position=None):
-        logger.debug('========== RENAME ==========')
+        #logger.debug('========== RENAME ==========')
         if full_name:
             if '|' in full_name:
                 longname = full_name.rsplit('|', 1)
@@ -387,16 +387,16 @@ class RigName(NameBase):
         if not self.validate():
             self.parse_name()
 
-        logger.debug('self.full_name: {}'.format(self.full_name))
-        logger.debug('self.prefix: {}'.format(self.prefix))
-        logger.debug('self.side: {}'.format(self.side))
-        logger.debug('self.region: {}'.format(self.region))
-        logger.debug('self.element: {}'.format(self.element))
-        logger.debug('self.control_type: {}'.format(self.control_type))
-        logger.debug('self.rig_type: {}'.format(self.rig_type))
-        logger.debug('self.maya_type: {}'.format(self.maya_type))
-        logger.debug('self.position: {}'.format(self.position))
-        logger.debug('Rename output: {}'.format(self.output()))
+        #logger.debug('self.full_name: {}'.format(self.full_name))
+        #logger.debug('self.prefix: {}'.format(self.prefix))
+        #logger.debug('self.side: {}'.format(self.side))
+        #logger.debug('self.region: {}'.format(self.region))
+        #logger.debug('self.element: {}'.format(self.element))
+        #logger.debug('self.control_type: {}'.format(self.control_type))
+        #logger.debug('self.rig_type: {}'.format(self.rig_type))
+        #logger.debug('self.maya_type: {}'.format(self.maya_type))
+        #logger.debug('self.position: {}'.format(self.position))
+        #logger.debug('Rename output: {}'.format(self.output()))
 
     def components(self):
         '''
