@@ -25,4 +25,5 @@ def calculate_pole_vector_position(root, mid, end):
     # Add resulting vecotr to mid joint
     final_vector = arrow_vector + mid_vector
 
+
     return final_vector
