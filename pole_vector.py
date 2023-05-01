@@ -11,8 +11,18 @@ def calculate_pole_vector_position(root, mid, end):
     mid_vector = om.MVector(mid_position[0], mid_position[1], mid_position[2])
     end_vector = om.MVector(end_position[0], end_position[1], end_position[2])
 
-    midpoint_vector = (end_vector - root_vector) * 0.5 + root_vector
+    # Calculate vectors
+    start_end = end_vector - root_vector
+    start_mid = mid_vector - root_vector
 
-    pole_vector_position = (mid_vector - midpoint_vector) * midpoint_vector.length()/3 + mid_vector
+    dot_product = start_mid * start_end
 
-    return pole_vector_position
+    proj = float(dot_product) / float(start_end.length())
+    proj_vector = start_end.normal() * proj
+
+    arrow_vector = start_mid - proj_vector
+
+    # Add resulting vecotr to mid joint
+    final_vector = arrow_vector + mid_vector
+
+    return final_vector
