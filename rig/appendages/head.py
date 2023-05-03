@@ -1,9 +1,8 @@
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
 import adv_scripting.rig_name as rn
-import adv_scripting.matrix_tools as mt
+import adv_scripting.matrix_tools as matrix_tools
 import adv_scripting.rig.appendages.appendage as rap
-import adv_scripting.pole_vector as pv
 import adv_scripting.utilities as utils
 import logging
 import pymel.core as pm
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 import importlib as il
 il.reload(rap)
-il.reload(mt)
+il.reload(matrix_tools)
 il.reload(pv)
 il.reload(utils)
 
@@ -45,19 +44,21 @@ class Head(rap.Appendage):
     def build(self):
         # Create a root control, place its offsetParentMatrix to the root joint and connect the
         # resulting matrix constraint to the start_matrix attribute on the output node.
-        self.neck_control = utils.create_fk_control(self.bnd_joints['start_joint'], f'{self.output}.start_joint_matrix')
-        self.head_ctrl = utils.create_fk_control(self.bnd_joints['head_joint'], f'{self.output}.head_joint_matrix')
+        self.neck_control = utils.create_fk_control(self.bnd_joints['start_joint'],
+                                                    connect_output=f'{self.output}.start_joint_matrix')
+        self.head_ctrl = utils.create_fk_control(self.bnd_joints['head_joint'],
+                                                connect_output=f'{self.output}.head_joint_matrix',
+                                                parent_control=self.neck_control)
 
-        cmds.parent(self.head_ctrl, self.neck_control)
-        #TODO: fix parent_inverse_matrix for head control?
-        # matrix_tools.matrix_parent_constraint(self.neck_control, self.head_ctrl)
 
     def connect_outputs(self):
         # Connect the start matrix on the output node to the skeleton
         for key, joint_name in self.bnd_joints.items():
             cmds.connectAttr(f'{self.output}.{key}_matrix', f'{joint_name}.offsetParentMatrix')
+            cmds.setAttr(joint_name+'.jointOrient', 0,0,0)
+            matrix_tools.make_identity(joint_name)
+
 
     def cleanup(self):
         # Parent the controls to the control group.
-        # cmds.parent(self.head_ctrl, self.neck_control)
         cmds.parent(self.neck_control, self.controls_grp)
