@@ -28,10 +28,8 @@ def snap_offset_parent_matrix(source, target):
     # Set the source object's offsetParentMatrix to the offset
     mc.setAttr(f'{source}.offsetParentMatrix', offset_matrix, type='matrix')
 
-    # TODO: break this out into it's own function.  YES, its short.. but we'll use it a lot.
-    # zero out source object's object transform
-    identity_mtx = om.MMatrix()
-    mc.xform(source, m=identity_mtx, os=True)
+    # Zero out the object space transforms
+    make_identity(source)
 
     return offset_matrix
 
@@ -53,8 +51,8 @@ def matrix_parent_constraint(driver, driven, connect_output=None):
 
     # Create a mult matrix node.  It will have three inpusts:
     #       in[0]: offset matrix from driver.
-    #       in[1]: The world marrix of the driver.
-    #       in[2]: The inverse worldInverseMatrix of the driven objects parent.
+    #       in[1]: The world matrix of the driver.
+    #       in[2]: The worldInverseMatrix of the driven objects parent.
     mult_matrix_node = mc.createNode('multMatrix')
     mc.setAttr(f'{mult_matrix_node}.matrixIn[0]', offset_matrix, type='matrix')
     mc.connectAttr(f'{driver}.worldMatrix[0]', f'{mult_matrix_node}.matrixIn[1]')
@@ -69,10 +67,19 @@ def matrix_parent_constraint(driver, driven, connect_output=None):
         mc.connectAttr(f'{mult_matrix_node}.matrixSum', f'{connect_output}')
     else:
         mc.connectAttr(f'{mult_matrix_node}.matrixSum', f'{driven}.offsetParentMatrix')
-
-    # TODO: break this out into it's own function.  YES, its short.. but we'll use it a lot.
-    # zero out source object
-    identity_mtx = om.MMatrix()
-    mc.xform(driven, m=identity_mtx, os=True)
+        make_identity(driven)
 
     return offset_matrix
+
+def make_identity(transform):
+    '''
+    Description:
+        Set matrix on specified transform to identity.
+    Args:
+        transform (str): Name of transform node to set.
+    Return (list): Matrix of control
+    '''
+    identity_mtx = om.MMatrix()
+    mc.xform(transform, m=identity_mtx.setToIdentity(), os=True)
+
+    logger.info(f'Set identity on {transform}')
