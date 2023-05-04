@@ -76,7 +76,7 @@ class TwoBoneFKIK(appendage.Appendage):
 
     def build(self):
         #FK
-        self.fk_arm_controls = list()
+        self.fk_controls = list()
         for joint, joint_rn in self.fk_skeleton:
             self.side = str(joint_rn.side)
             self.element = str(joint_rn.element)
@@ -88,12 +88,12 @@ class TwoBoneFKIK(appendage.Appendage):
 
             cmds.xform(joint, ro = [0, 0, 0], os=True)
             cmds.setAttr(joint+'.jointOrient', 0,0,0)
-            self.fk_arm_controls.append(fk_control)
+            self.fk_controls.append(fk_control)
 
-        for index in range(len(self.fk_arm_controls)):
+        for index in range(len(self.fk_controls)):
             if index != 0:
-                cmds.parent(self.fk_arm_controls[index], self.fk_arm_controls[index-1])
-                matrix_tools.matrix_parent_constraint(self.fk_arm_controls[index-1], self.fk_arm_controls[index])
+                cmds.parent(self.fk_controls[index], self.fk_controls[index-1])
+                matrix_tools.matrix_parent_constraint(self.fk_controls[index-1], self.fk_controls[index])
 
         #IK
         root, root_rn = self.ik_skeleton[0]
@@ -162,7 +162,7 @@ class TwoBoneFKIK(appendage.Appendage):
 
     def cleanup(self):
         # Parent the controls to the control group.
-        cmds.parent(self.fk_arm_controls[0], self.controls_grp)
+        cmds.parent(self.fk_controls[0], self.controls_grp)
         cmds.parent(self.ik_control, self.controls_grp)
         cmds.parent(self.arm_pv_control, self.controls_grp)
         cmds.parent(self.fk_skeleton[0][0], self.controls_grp)
