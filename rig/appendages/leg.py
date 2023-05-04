@@ -14,8 +14,13 @@ il.reload(appendage)
 il.reload(mt)
 il.reload(rig_name)
 il.reload(utils)
+il.reload(two_bone_fkik)
 
 class Leg(two_bone_fkik.TwoBoneFKIK):
+	'''
+	Description: The leg class uses the data from the two_bone_fkik output as the leg and attaches an
+				fk and ik foot rig to the end.
+	'''
 	def __init__(	self,
 					appendage_name,
 					start_joint,
@@ -32,69 +37,77 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 											input_matrix)
 
 		self.side = side
-		self.setup_leg()
-		# self.build_leg()
+		self.setup_foot()
+		self.build_fk_foot()
+		self.build_ik_foot()
 		# self.connect_leg_output()
 		# self.cleanup_leg()
 
-	def setup_leg(self):
+	def setup_foot(self):
 		logger.debug('setup_leg')
 
-	    # Get foot bnd_joints
-        # ball_joint
-        # toe_end_joint
-        # TODO: Validate/test that there is a parent joint here.
-		self.upleg_joint = self.bnd_joints['start_joint']
-		self.ankle_joint = self.bnd_joints['end_joint']
+	    # Get foot bnd_joints (ball_joint, toe_end_joint)
 		try:
-			self.ball_joint = cmds.listRelatives(self.ankle_joint)[0]
-		except:
-			logging.error('Ankel joint has not children')
+			self.ball_joint = cmds.listRelatives(self.bnd_joints['end_joint'])[0]
+			self.bnd_joints['ball_joint'] = self.ball_joint
+		except IndexError:
+			logging.error(f"{self.bnd_joints['end_joint']} has no children.")
 			return
 
-		self.toeEnd_joint = cmds.listRelatives(self.ball_joint)[0]
+		try:
+			self.toeEnd_joint = cmds.listRelatives(self.ball_joint)[0]
+		except IndexError:
+			logging.error(f'{self.ball_joint} joint has no children.')
+			return
+
 		cmds.addAttr(self.output, longName='ball_matrix', attributeType='matrix')
 
-
-		print('self.ankle_joint: ', self.ankle_joint)
-		print('self.toeEnd_joint: ', self.toeEnd_joint)
-	    # Extract a control skeleton for the fk
-		self.fk_skeleton = utils.create_control_joints_from_skeleton('lt_ankle_bnd_jnt',
-		                                                    'lt_toe_end_jnt',
-		                                                    rig_name.ControlType('fk'),
+		# WARNING: Begin hack.  Running the code without creating the skeleton and deleting it 
+		# results in the ankle joint positioned at the knee.  I suspect that something is selected
+		# when a joint gets created somewhere in the code?  
+		workaround_garbage = utils.create_control_joints_from_skeleton(self.bnd_joints['end_joint'],
+		                                                    self.toeEnd_joint,
+		                                                    rig_name.ControlType('switch'),
 		                                                    0,
 															0)
+		cmds.delete(workaround_garbage[0])
+		# WARNING: End hack.  (soooo annoying)
 
-	def build_leg(self):
-		logger.debug('build_leg')
-        # TODO: name should be more accessable.  The renaming utility is basing the rename on
-        # the joint name and this does not work well in this case.  rigname should be:
-        #            rn.RigName(
-        #                    element='root',
-        #                    rig_type='ctrl',
-        #                    maya_type='transform'))
-		self.foot_ctrl = utils.create_fk_control(self.ball_joint,
-                                                 connect_output=f'{self.output}.ball_matrix')
+	    # Extract a control skeleton for the fk
+		self.fk_foot_skeleton = utils.create_control_joints_from_skeleton(self.bnd_joints['end_joint'],
+					                                                    self.toeEnd_joint,
+					                                                    rig_name.ControlType('fk'),
+					                                                    0,
+																		0)
+		# Extract a control skeleton for the ik
+		self.ik_foot_skeleton = utils.create_control_joints_from_skeleton(self.bnd_joints['end_joint'],
+					                                                    self.toeEnd_joint,
+					                                                    rig_name.ControlType('ik'),
+					                                                    0,
+																		0)
+
+	def build_fk_foot(self):
+		logger.debug('build_fk_foot')
+
+		# Create a control for the fk ball joint and parent that control to the leg's fk control 
+		# hierarchy.
+		self.ball_ctrl = utils.create_fk_control(self.fk_foot_skeleton[1][1].output(),
+                                                 parent_control=self.fk_controls[-1])
+
+	def build_ik_foot(self):
+		logger.debug('build_ik_foot')
+
+	def create_blended_result(self):
+		'''
+		Take the output matricies fromt he ik and fk and combine them using a blendMatrix node.  The
+		result gets outpu tot he output node's joint matrix attribute.
+		'''
+		logger.debug('create_blended_result')
 
 	def connect_leg_output(self):
 		logger.debug('connect_leg_output')
     	# Connect the start matrix on the output node to the skeleton
 		cmds.connectAttr(f'{self.output}.ball_matrix', f'{self.ball_joint}.offsetParentMatrix')
     
-
-		# Extract a control skeleton for the ik
-		# self.ik_skeleton = utils.create_control_joints_from_skeleton(self.bnd_joints['start_joint'],
-		#                                                         self.bnd_joints['end_joint'],
-		#                                                         rig_name.ControlType('ik'),
-		#                                                         self.num_upleg_joints)
-		#
-		# # Extract a control skeleton for the revfoot
-		# self.rev_skeleton = utils.create_control_joints_from_skeleton(self.ankle_joint['start_joint'],
-		#                                                         self.rev_joints['end_joint'],
-		#                                                         rig_name.ControlType('rev'),
-		#                                                         self.num_ankle_joints)
-		#
-		# utils.rename_skeleton_rev(self.rev_skeleton)
-
 	def cleanup_leg(self):
-		pass
+		logger.debug('cleanup_leg')
