@@ -19,11 +19,15 @@ import importlib as il
 il.reload(matrix_tools)
 
 
-def create_fk_control(joint, connect_output=None):
+def create_fk_control(joint, connect_output=None, parent_control=None):
     fk_control = cmds.createNode('transform', n=f'{joint}'+'_fk_ctrl_transform')
+    if parent_control:
+        cmds.parent(fk_control, parent_control)
+
     matrix_tools.snap_offset_parent_matrix(fk_control, joint)
     matrix_tools.matrix_parent_constraint(fk_control, joint, connect_output=connect_output)
 
+    # if not connect_output:
     cmds.xform(joint, ro = [0, 0, 0], os=True)
     cmds.setAttr(joint+'.jointOrient', 0,0,0)
 
