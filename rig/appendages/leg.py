@@ -97,6 +97,24 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 	def build_ik_foot(self):
 		logger.debug('build_ik_foot')
 
+		self.ik_foot_skeleton
+		name_ball_ik_handle = rig_name.RigName(element='ball', 
+											side=self.side,
+        									control_type='ik', 
+        									rig_type='handle', 
+        									maya_type='ikrpsolver')
+		name_ball_ik_control = rig_name.RigName(element='ball', 
+											side=self.side,
+            								control_type='ik', 
+            								rig_type='ctrl', 
+            								maya_type='controller')
+
+		ball_ik_handle = cmds.ikHandle(  sj=self.ik_foot_skeleton[0][1].output(),
+										 ee=self.ik_foot_skeleton[1][1].output(), 
+										 sol='ikRPsolver', 
+										 n=str(name_ball_ik_handle))[0]
+		self.ball_ik_control = cmds.createNode('transform', n=str(name_ball_ik_control))
+
 	def create_blended_result(self):
 		'''
 		Take the output matricies fromt he ik and fk and combine them using a blendMatrix node.  The
