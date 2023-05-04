@@ -157,6 +157,8 @@ class TwoBoneFKIK(appendage.Appendage):
         # Connect the start matrix on the output node to the skeleton
         for key, joint_name in self.bnd_joints.items():
             cmds.connectAttr(f'{self.output}.{key}_matrix', f'{joint_name}.offsetParentMatrix')
+            cmds.setAttr(f'{joint_name}.jointOrient', 0,0,0)
+            matrix_tools.make_identity(joint_name)  
 
     def cleanup(self):
         # Parent the controls to the control group.
