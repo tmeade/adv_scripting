@@ -93,22 +93,34 @@ class Spine(rap.Appendage):
         cmds.move(-3, 0, 0, copy_curve, relative=True)
 
         # Make loft curve 1,2
-        curve_loft = cmds.loft(copy_curve, orig_curve, ch=True, rn=True, ar=True)
+        curve_loft = cmds.loft(copy_curve, orig_curve, ch=True, rn=True, ar=True, n="spineSetupSurface")
 
         # save on valuable Joint Hierarchy
         root_joint = cmds.ls(ik_spine_joints, dag=True)
-
-        # Unparent each joint in the hierarchy
-        while cmds.listRelatives(root_joint, children=True, type='joint') is not None:
-            children = cmds.listRelatives(root_joint, children=True, type='joint')
-            cmds.parent(children, world=True)
-
+        
         # Clean curves, history
         cmds.delete(curve_loft, constructionHistory=True)
 
         cmds.delete(orig_curve)
         cmds.delete(copy_curve)
-
+        
+        cmds.select(curve_loft[0])
+        cmds.select(root_joint, add=True)
+        cmds.UVPin()
+        
+        # Tried to make as node without select but not moving
+        """
+        sPin = cmds.createNode('uvPin', n='spineUvPin')
+        cmds.connectAttr('spineSetupSurfaceShape.worldSpace', f'{sPin}.deformedGeometry')
+        cmds.connectAttr('spineSetupSurfaceShapeOrig.local', f'{sPin}.originalGeometry')
+        
+        
+        for i, joint in enumerate(root_joint):
+            cmds.connectAttr(f'spineUvPin.outputMatrix[{i}]', f'{joint}.offsetParentMatrix')
+        """
+        
+        ############################# Old Hair, ik system ################################
+        """
         # pymel for createHair command
         cmds.select(curve_loft[0], r=True)
         pm.language.Mel.eval("createHair 1 5 10 0 0 1 0 5 0 1 1 1;")
@@ -137,12 +149,12 @@ class Spine(rap.Appendage):
             cmds.rename(follicle, "spine_follicle_1")
 
         cmds.select(cl=True)
-
+        """
+        #######################################################################################
         cmds.select("driver_spine_bnd_jnt_01", "driver_spine_bnd_jnt_03", "driver_spine_bnd_jnt_05", curve_loft[0])
         cmds.skinCluster(n="ik_skinC")
         cmds.skinCluster("ik_skinC", e=True, mi=3)
 
-        cmds.rename(curve_loft[0], "spineSetupSurface")
         cmds.setAttr("spineSetupSurface.visibility", False)
         
         
