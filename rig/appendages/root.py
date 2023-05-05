@@ -6,6 +6,10 @@ import adv_scripting.utilities as utils
 import logging
 logger = logging.getLogger(__name__)
 
+import importlib as il
+il.reload(appendage)
+il.reload(matrix_tools)
+
 
 class Root(appendage.Appendage):
     def __init__(self, appendage_name, start_joint, input_matrix=None):
@@ -25,8 +29,13 @@ class Root(appendage.Appendage):
                                                  connect_output=f'{self.output}.root_joint_matrix')
 
     def connect_outputs(self):
+        if self.input_matrix:
+            matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.root_ctrl)
+
         # Connect the start matrix on the output node to the skeleton
         cmds.connectAttr(f'{self.output}.root_joint_matrix', f'{self.start_joint}.offsetParentMatrix')
+        cmds.setAttr(f'{self.start_joint}.jointOrient', 0,0,0)
+        matrix_tools.make_identity(self.start_joint)
 
     def cleanup(self):
         # Parent the controls to the control group.

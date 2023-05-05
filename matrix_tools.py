@@ -44,10 +44,15 @@ def matrix_parent_constraint(driver, driven, connect_output=None):
     Returns:
         offset_matriix (MMatrix): offset beteween driver and driven.
     '''
+    # Allow driver to be a node name or plug name
+    # TODO: Add some additional checks on driver type
+    driver_plug = driver
+    if '.' not in driver_plug:
+        driver_plug = f'{driver}.worldMatrix[0]'
 
-    # TODO: This is a useful funciton on it's own.  Create a new function to return the offset
+    # Get offset between driver and driven
     offset_matrix = (om.MMatrix(mc.getAttr(f'{driven}.worldMatrix[0]')) *
-                    om.MMatrix(mc.getAttr(f'{driver}.worldInverseMatrix[0]')))
+                    om.MMatrix(mc.getAttr(driver_plug)).inverse())
 
     # Create a mult matrix node.  It will have three inpusts:
     #       in[0]: offset matrix from driver.
@@ -55,7 +60,7 @@ def matrix_parent_constraint(driver, driven, connect_output=None):
     #       in[2]: The worldInverseMatrix of the driven objects parent.
     mult_matrix_node = mc.createNode('multMatrix')
     mc.setAttr(f'{mult_matrix_node}.matrixIn[0]', offset_matrix, type='matrix')
-    mc.connectAttr(f'{driver}.worldMatrix[0]', f'{mult_matrix_node}.matrixIn[1]')
+    mc.connectAttr(driver_plug, f'{mult_matrix_node}.matrixIn[1]')
 
     driven_parent = mc.listRelatives(driven, parent=True)
     if driven_parent:

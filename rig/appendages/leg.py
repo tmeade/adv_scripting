@@ -32,6 +32,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		two_bone_fkik.TwoBoneFKIK.__init__( self,
 											appendage_name,
 											start_joint,
+											side,
 											num_upleg_joints,
 											num_lowleg_joints,
 											input_matrix)
