@@ -38,12 +38,15 @@ def matrix_parent_constraint(driver, driven, connect_output=None):
     Description:
         A function to connect "control" to a driven object using offset parent matrix
     Arguments:
-        driver (str): name of the object that will control the matrix of the other.
+        driver (str): name of the object that will control the matrix of the other.  This will
+                      accept node names ('input_grp') and plugs ('input_grp.input_matrix').  The
+                      names will get converted to plugs with the worldMatrix output.
         derven (str): Name of the object whose parentOffset matrix will be determined by the offset
                     and transform of the driver.
     Returns:
         offset_matriix (MMatrix): offset beteween driver and driven.
     '''
+
     # Allow driver to be a node name or plug name
     # TODO: Add some additional checks on driver type
     driver_plug = driver
