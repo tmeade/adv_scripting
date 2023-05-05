@@ -8,13 +8,13 @@ import importlib as il
 il.reload(root)
 
 SETTINGS = {'Root': {
-                'name': 'root',
+                'appendage_name': 'root',
                 'start_joint': 'root_bnd_jnt'},
             'Spine': {
                 'appendage_name': 'spine',
                 'start_joint': 'spine_bnd_jnt_01'},
             'Head': {
-                'name': 'head',
+                'appendage_name': 'head',
                 'start_joint': 'neck_bnd_jnt',
                 'num_neck_joints': 0}
             }
@@ -39,6 +39,7 @@ class Rig():
         self.global_control = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='main',
                                                         rig_type='ctrl'))
+        cmds.parent(self.global_control, self.rig_grp)
 
     def build(self):
         logger.debug('build')
@@ -49,6 +50,7 @@ class Rig():
 class Biped(Rig):
     def __init__(self, name, settings):
         Rig.__init__(self, name, settings)
+        self.sides = [rig_name.Side('lt'), rig_name.Side('rt')]
 
     def build(self):
         logger.debug('build')
@@ -63,6 +65,7 @@ class Biped(Rig):
         self.root = appendages.root.Root(appendage_name='root',
                                     start_joint='root_bnd_jnt',
                                     input_matrix=f'{self.global_control}.worldMatrix[0]')
+        cmds.parent(self.root.appendage_grp, self.rig_grp)
 
     def build_spine(self):
         logger.debug('build_root')
