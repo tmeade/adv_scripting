@@ -163,7 +163,15 @@ class Spine(rap.Appendage):
         
     def build(self):
         # Implement build method here
-        pass
+        spine_joints_list = cmds.ls(type='joint')
+        spine_joints_list = [joint for joint in spine_joints_list if 'spine_' in joint]
+        spine_joints_list = [joint for joint in spine_joints_list if not 'for_ik_' or not 'driver_' in joint]
+        
+        ik_spine_joints_list = cmds.ls(type='joint')
+        ik_spine_joints_list = [joint for joint in ik_spine_joints_list if 'for_ik_' in joint]
+        
+        for sjoint, ijoint in zip(spine_joints_list, ik_spine_joints_list):
+            mt.matrix_parent_constraint(ijoint,sjoint)
 
     def cleanup(self):
         # Implement cleanup method here
@@ -173,5 +181,5 @@ class Spine(rap.Appendage):
         # Implement connect_outputs method here
         pass
 
-""" # Maya Test
-spine = Spine("spine", "spine_bnd_jnt_01")"""
+ # Maya Test
+spine = Spine("spine", "spine_bnd_jnt_01")
