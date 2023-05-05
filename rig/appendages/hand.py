@@ -412,7 +412,9 @@ class Hand(appendage.Appendage):
 
         # Blended output node, allowing for FK/IK switch
         name_blend = rig_name.RigName(self.hand_jnt).rename(control_type='switch', rig_type='grp')
-        blend = cmds.createNode('transform', n=name_blend.output())
+        blend = name_blend.output()
+        self.blend = blend
+        cmds.createNode('transform', n=blend)
         self.blend_matrix = list() # Result blend matrices
 
         # Build IK
@@ -471,16 +473,26 @@ class Hand(appendage.Appendage):
         # Connect IK
         # Already handled in build
 
-        # Connect blend, switching between FK/IK
-        for branch_mat, branch_bnd in zip(self.blend_matrix, self.bnd_jnt):
-            for mat, bnd in zip(branch_mat, branch_bnd):
-                parent = cmds.listRelatives(bnd, p=True, typ='joint')
-                if parent:
-                    parent = parent[0]
-                    cmds.connectAttr(f'{parent}.worldInverseMatrix[0]', f'{mat}.matrixIn[1]')
-                    mat_attr = mat.rstrip('_multMatrix')
-                    cmds.connectAttr(f'{mat}.matrixSum', f'{self.output}.{mat_attr}')
-                    cmds.xform(bnd, t=[0, 0, 0], os=True)
+        # Connect blend matrix to bnd joint, switching between FK/IK
+        for idx in range(len(self.blend_matrix)):
+            branch_mat = self.blend_matrix[idx]
+            branch_bnd = self.bnd_jnt[idx]
+            branch_ik = self.skeleton_ik[idx]
+            mat0, mat1, mat2 = branch_mat
+            bnd0, bnd1, bnd2 = branch_bnd
+            ik0, ik1, ik2 = branch_ik
+            cmds.connectAttr(f'{self.hand_jnt}.worldInverseMatrix[0]', f'{mat0}.matrixIn[1]')
+            cmds.connectAttr(f'{mat0}.matrixSum', f'{bnd0}.offsetParentMatrix')
+            cmds.connectAttr(f'{ik0}.worldInverseMatrix[0]', f'{mat1}.matrixIn[1]')
+            cmds.connectAttr(f'{mat1}.matrixSum', f'{bnd1}.offsetParentMatrix')
+            cmds.connectAttr(f'{ik1}.worldInverseMatrix[0]', f'{mat2}.matrixIn[1]')
+            cmds.connectAttr(f'{mat2}.matrixSum', f'{bnd2}.offsetParentMatrix')
+            # parent = cmds.listRelatives(bnd, p=True, typ='joint')
+            # if parent:
+            #     parent = parent[0]
+            #     cmds.connectAttr(f'{parent}.worldInverseMatrix[0]', f'{mat}.matrixIn[1]')
+            #     mat_attr = mat.rstrip('_multMatrix')
+            #     cmds.connectAttr(f'{mat}.matrixSum', f'{self.output}.{mat_attr}')
 
 
     def cleanup(self):
@@ -496,6 +508,8 @@ class Hand(appendage.Appendage):
         cmds.parent(self.fk_ctrl_grp, self.controls_grp)
         cmds.parent(self.ik_ctrl_grp, self.controls_grp)
         cmds.parent(self.pv_ctrl_grp, self.controls_grp)
+        # Group blend/fkik switch under appendage group
+        cmds.parent(self.blend, self.appendage_grp)
 
 
 def test():

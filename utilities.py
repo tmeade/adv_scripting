@@ -383,10 +383,9 @@ def blend_skeleton(fk_joint, ik_joint, blend_node, blend_attribute='fkik'):
     blend_node (str): node to connect switch attribute
     blend_attribute (str): name of switch attribute
     '''
-    blend_name = rig_name.RigName(blend_node)
-    blend_name.rename(element=f'{blend_attribute}', rig_type='util', maya_type='blendMatrix')
-    blend_mat = blend_name.output()
-    cmds.createNode('blendMatrix', n=blend_name.output())
+    blend_rn = rig_name.RigName(f'{blend_attribute}_util_blendMatrix')
+    blend_mat = blend_rn.output()
+    cmds.createNode('blendMatrix', n=blend_mat)
     cmds.connectAttr(f'{fk_joint}.worldMatrix', f'{blend_mat}.inputMatrix', f=True)
     cmds.connectAttr(f'{ik_joint}.worldMatrix', f'{blend_mat}.target[0].targetMatrix', f=True)
     cmds.connectAttr(f'{blend_node}.{blend_attribute}', f'{blend_mat}.envelope', f=True)
