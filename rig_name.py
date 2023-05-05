@@ -397,6 +397,34 @@ class RigName(NameBase):
         #logger.debug('self.maya_type: {}'.format(self.maya_type))
         #logger.debug('self.position: {}'.format(self.position))
         #logger.debug('Rename output: {}'.format(self.output()))
+        return self
+
+    def remove(self,
+                full_name=False,
+                side=False,
+                region=False,
+                element=False,
+                control_type=False,
+                rig_type=False,
+                maya_type=False,
+                position=False):
+        if full_name:
+            self.full_name = None
+        if side:
+            self.side = None
+        if region:
+            self.region = None
+        if element:
+            self.region = None
+        if control_type:
+            self.control_type = None
+        if rig_type:
+            self.rig_type = None
+        if maya_type:
+            self.maya_type = None
+        if position:
+            self.position = None
+        return self
 
     def components(self):
         '''

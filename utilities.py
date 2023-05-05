@@ -349,6 +349,29 @@ def create_group(node, parent=None):
     return grp
 
 
+# BLEND SKELETON =======================================================
+
+def blend_skeleton(fk_joint, ik_joint, blend_node, blend_attribute='fkik'):
+    '''
+    Arguments
+    fk_joint (str): string name of FK joint
+    ik_joint (str): string name of IK joint
+    blend_node (str): node to connect switch attribute
+    blend_attribute (str): name of switch attribute
+    '''
+    blend_name = rig_name.RigName(blend_node)
+    blend_name.rename(element=f'{blend_name.element.output()}_fkik', rig_type='util', maya_type='blendMatrix')
+
+    blend_mat = cmds.createNode('blendMatrix', n=blend_name.output())[0]
+    cmds.connectAttr(f'{fk_joint}.worldMatrix', f'{blend_mat}.inputMatrix', f=True)
+    cmds.connectAttr(f'{ik_joint}.worldMatrix', f'{blend_mat}.target[0].targetMatrix', f=True)
+    cmds.connectAttr(f'{blend_node}.{blend_attribute}', f'{blend_mat}.envelope'), f=True)
+
+    result_mat = cmds.createNode('multMatrix')
+    cmds.connectAttr(f'{blend_mat}.outputMatrix', f'{result_mat}.matrixIn[0]', f=True)
+    return result_mat
+
+
 # LOCK / UNLOCK ATTRIBUTES =============================================
 
 def unlock_all(node):
