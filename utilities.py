@@ -19,7 +19,8 @@ import importlib as il
 il.reload(matrix_tools)
 
 
-def create_fk_control(joint, connect_output=None, parent_control=None):
+def create_fk_control(joint, connect_output=None, parent_control=None, rotate_order='xyz'):
+    # TODO: Set rotate order on control
     fk_control = cmds.createNode('transform', n=f'{joint}'+'_fk_ctrl_transform')
     if parent_control:
         cmds.parent(fk_control, parent_control)
@@ -27,9 +28,9 @@ def create_fk_control(joint, connect_output=None, parent_control=None):
     matrix_tools.snap_offset_parent_matrix(fk_control, joint)
     matrix_tools.matrix_parent_constraint(fk_control, joint, connect_output=connect_output)
 
-    # if not connect_output:
-    cmds.xform(joint, ro = [0, 0, 0], os=True)
-    cmds.setAttr(joint+'.jointOrient', 0,0,0)
+    if not connect_output:
+        cmds.xform(joint, ro = [0, 0, 0], os=True)
+        cmds.setAttr(joint+'.jointOrient', 0,0,0)
 
     return fk_control
 
@@ -365,7 +366,7 @@ def blend_skeleton(fk_joint, ik_joint, blend_node, blend_attribute='fkik'):
     blend_mat = cmds.createNode('blendMatrix', n=blend_name.output())[0]
     cmds.connectAttr(f'{fk_joint}.worldMatrix', f'{blend_mat}.inputMatrix', f=True)
     cmds.connectAttr(f'{ik_joint}.worldMatrix', f'{blend_mat}.target[0].targetMatrix', f=True)
-    cmds.connectAttr(f'{blend_node}.{blend_attribute}', f'{blend_mat}.envelope'), f=True)
+    cmds.connectAttr(f'{blend_node}.{blend_attribute}', f'{blend_mat}.envelope', f=True)
 
     result_mat = cmds.createNode('multMatrix')
     cmds.connectAttr(f'{blend_mat}.outputMatrix', f'{result_mat}.matrixIn[0]', f=True)
