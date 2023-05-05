@@ -18,7 +18,7 @@ class Arm(two_bone_fkik.TwoBoneFKIK):
                     num_lowerTwist_joint,
                     side,
                     element,
-                    control_to_local_orient=False,
+                    control_to_local_orient=True,
                     input_matrix=None):
         two_bone_fkik.TwoBoneFKIK.__init__( self,
                                             appendage_name,

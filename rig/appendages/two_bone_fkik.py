@@ -37,7 +37,7 @@ class TwoBoneFKIK(appendage.Appendage):
         self.num_lowerTwist_joints = num_lowerTwist_joint
         self.control_to_local_orient = control_to_local_orient
         self.side = side
-        self.element = element
+        self.appendage_name = appendage_name
         appendage.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
 
     def setup(self):
@@ -85,7 +85,7 @@ class TwoBoneFKIK(appendage.Appendage):
 
         # Create blended output
          #TODO : twist joint blending
-        name_FKIK_switch = rig_name.RigName(element=self.element, side=self.side,
+        name_FKIK_switch = rig_name.RigName(element=self.appendage_name, side=self.side,
             control_type='switch', rig_type='grp')
         self.FKIK_switch = cmds.createNode('transform', n=str(name_FKIK_switch))
         cmds.addAttr(self.FKIK_switch, ln=('FKIK'), at='double', min=0, max=1, k=True)
@@ -96,7 +96,7 @@ class TwoBoneFKIK(appendage.Appendage):
             result_matricies.append(blend_skeleton(fk,
                                                    ik,
                                                    f'{self.FKIK_switch}.FKIK',
-                                                   element=self.element,
+                                                   element=self.appendage_name,
                                                    side=self.side))
 
         bnd_joints_list = [self.bnd_joints['start_joint'],self.bnd_joints['middle_joint'],self.bnd_joints['end_joint']]

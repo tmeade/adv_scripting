@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 import importlib as il
 il.reload(rap)
 il.reload(matrix_tools)
-il.reload(pv)
 il.reload(utils)
 
 
@@ -42,8 +41,7 @@ class Head(rap.Appendage):
         logger.debug('self.bnd_joints: {} '.format(self.bnd_joints))
 
     def build(self):
-        # Create a root control, place its offsetParentMatrix to the root joint and connect the
-        # resulting matrix constraint to the start_matrix attribute on the output node.
+        # TODO: Add support for neck twist joints!
         self.neck_control = utils.create_fk_control(self.bnd_joints['start_joint'],
                                                     connect_output=f'{self.output}.start_joint_matrix')
         self.head_ctrl = utils.create_fk_control(self.bnd_joints['head_joint'],
