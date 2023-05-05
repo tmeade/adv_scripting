@@ -59,6 +59,8 @@ class Appendage(ABC):
         self.output = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='output',
                                                         rig_type='grp'))
+        if self.input_matrix:
+            cmds.connectAttr(self.input_matrix, f'{self.input}.input_matrix')
 
     @abstractmethod
     def setup(self):
