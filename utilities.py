@@ -286,8 +286,32 @@ def create_control(node, parent=None, size=1):
 
     Returns name of created control.
     '''
-    ctrl_rn = rig_name.RigName(node)
-    ctrl_rn.rename(rig_type='ctrl')
+    ctrl_rn = rig_name.RigName(node).rename(rig_type='ctrl')
+    ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
+    #logger.debug(f'Created control: {ctrl}')
+    if parent:
+        cmds.parent(ctrl, parent)
+        # modify ctrl's transform to match parent
+        cmds.matchTransform(ctrl, parent, pos=1, rot=1, scl=1, piv=1)
+        # freeze transformations
+        cmds.makeIdentity(ctrl, apply=True, t=1, r=1, s=1, n=0)
+    # match ctrl's transform to node
+    matrix_tools.snap_offset_parent_matrix(ctrl, node)
+    return ctrl
+
+def create_control_pv(node, parent=None, size=1):
+    '''
+    Build a nurbs circle control at position of node.
+    Size determines circle's radius. Move control under parent if provided.
+
+    Arguments:
+    node (str): node to match transforms and position of control
+    parent (str): parent of control, if any
+    size (str): control radius
+
+    Returns name of created control.
+    '''
+    ctrl_rn = rig_name.RigName(node).rename(rig_type='pv').remove(maya_type=1)
     ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
     #logger.debug(f'Created control: {ctrl}')
     if parent:
@@ -360,14 +384,14 @@ def blend_skeleton(fk_joint, ik_joint, blend_node, blend_attribute='fkik'):
     blend_attribute (str): name of switch attribute
     '''
     blend_name = rig_name.RigName(blend_node)
-    blend_name.rename(element=f'{blend_name.element.output()}_fkik', rig_type='util', maya_type='blendMatrix')
-
-    blend_mat = cmds.createNode('blendMatrix', n=blend_name.output())[0]
+    blend_name.rename(element=f'{blend_attribute}', rig_type='util', maya_type='blendMatrix')
+    blend_mat = blend_name.output()
+    cmds.createNode('blendMatrix', n=blend_name.output())
     cmds.connectAttr(f'{fk_joint}.worldMatrix', f'{blend_mat}.inputMatrix', f=True)
     cmds.connectAttr(f'{ik_joint}.worldMatrix', f'{blend_mat}.target[0].targetMatrix', f=True)
-    cmds.connectAttr(f'{blend_node}.{blend_attribute}', f'{blend_mat}.envelope'), f=True)
+    cmds.connectAttr(f'{blend_node}.{blend_attribute}', f'{blend_mat}.envelope', f=True)
 
-    result_mat = cmds.createNode('multMatrix')
+    result_mat = cmds.createNode('multMatrix', n=f'{blend_attribute}_multMatrix')
     cmds.connectAttr(f'{blend_mat}.outputMatrix', f'{result_mat}.matrixIn[0]', f=True)
     return result_mat
 

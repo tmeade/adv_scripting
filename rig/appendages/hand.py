@@ -42,7 +42,6 @@ class Hand(appendage.Appendage):
     def __init__(self,
                  appendage_name,
                  start_joint,
-                 side=None,
                  num_upperTwist_joint=None,
                  num_lowerTwist_joint=None,
                  input_matrix=None):
@@ -57,13 +56,11 @@ class Hand(appendage.Appendage):
                 If None, automatically counts the number of lowerTwist joints.
             input_matrix (str): If specified, will connect/contrain to the parent appendage.
         '''
-        self.side = side
-        if not side:
-            start_rn = rig_name.RigName(start_joint)
-            self.side = start_rn.side.output()
-            logger.debug(f"Detected side '{self.side}' from joint '{start_joint}'")
-        elif side not in rig_name.VALID_SIDE_TYPES:
-            logger.error(f"Side '{side}' must match valid side type: {rig_name.VALID_SIDE_TYPES}")
+        start_rn = rig_name.RigName(start_joint)
+        self.side = start_rn.side.output()
+        logger.debug(f"Detected side '{self.side}' from joint '{start_joint}'")
+        if self.side not in rig_name.VALID_SIDE_TYPES:
+            logger.error(f"Side '{self.side}' must match valid side type: {rig_name.VALID_SIDE_TYPES}")
 
         if num_upperTwist_joint:
             if not isinstance(num_upperTwist_joint, int):
@@ -90,6 +87,7 @@ class Hand(appendage.Appendage):
 
         self.fk_ctrl = None # List of fk controls
         self.ik_ctrl = None # List of ik controls, one for each branch/finger
+        self.pv_ctrl = None # List of pole vectors
         self.skeleton_fk = None # IK joints
         self.skeleton_ik = None # FK joints
         # bnd_jnt is a 2D list of all control bind joints
@@ -102,9 +100,9 @@ class Hand(appendage.Appendage):
         #       ['lt_pinky_bnd_jnt_01', 'lt_pinky_bnd_jnt_02', 'lt_pinky_bnd_jnt_03']]
         self.bnd_jnt = list() # Bind joints
         # uppertwist_jnt is a 2D list containing each branch's upperTwist joints
-        self.uppertwist_jnt = list()
+        # self.uppertwist_jnt = list()
         # lowertwist_jnt is a 2D list containing each branch's lowerTwist joints
-        self.lowertwist_jnt = list()
+        # self.lowertwist_jnt = list()
 
         # initialize Appendage class
         appendage.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
@@ -168,15 +166,9 @@ class Hand(appendage.Appendage):
 
         # If Hand has Parent,
         # Add Parent matrix to Output attributes
-        self.parent = cmds.listRelatives(self.start_joint, p=True)
-        if self.parent:
-            cmds.addAttr(self.output, longName='limb_matrix', attributeType='matrix')
-
-        # Add Bnd joint matrix to Output attributes
-        for branch in self.bnd_jnt:
-            for jnt in branch:
-                cmds.addAttr(self.output, longName=f'{jnt}_matrix', attributeType='matrix')
-
+        # self.parent = cmds.listRelatives(self.start_joint, p=True)
+        # if self.parent:
+        #     cmds.addAttr(self.output, longName='limb_matrix', attributeType='matrix')
 
     def create_control_joints_from_skeleton(self,
                                             start_joint,
@@ -275,43 +267,6 @@ class Hand(appendage.Appendage):
         return skeleton_hand
 
 
-    def read_skeleton_v2(self, joint):
-        '''
-        Read current hand skeleton.
-        Build list called skeleton_hand consisting of each finger joint chain.
-
-        Arguments
-        joint: starting joint to read skeleton
-        skeleton_hand: list of finger joint chains, branches
-
-        Returns 2D list with each finger branch as its own list.
-        Includes wrist/hand joint. e.g.
-        ['rt_wrist_bnd_jnt', 'rt_hand_bnd_jnt',
-        ['rt_pinky_bnd_jnt_01', 'rt_pinky_bnd_jnt_02', 'rt_pinky_bnd_jnt_03'],
-        ['rt_ring_bnd_jnt_01', 'rt_ring_bnd_jnt_02', 'rt_ring_bnd_jnt_03'],
-        ['rt_middle_bnd_jnt_01', 'rt_middle_bnd_jnt_02', 'rt_middle_bnd_jnt_03'],
-        ['rt_index_bnd_jnt_01', 'rt_index_bnd_jnt_02', 'rt_index_bnd_jnt_03'],
-        ['rt_thumb_bnd_jnt_01', 'rt_thumb_bnd_jnt_02', 'rt_thumb_bnd_jnt_03']]
-        '''
-        skeleton_hand = list()
-        children = [joint]
-        # Walk down joint chain until finding hand joint or end joint
-        while len(children) == 1:
-            skeleton_hand.append(children[0])
-            children = cmds.listRelatives(children[0], typ='joint') or []
-
-        if len(children) == 0: # End joint discarded
-            end = skeleton_hand.pop()
-            #logger.debug(f'{end} - end joint, has no children.')
-        elif len(children) > 1: # Hand joint
-            self.hand_jnt = children[0]
-            #logger.debug(f'{self.hand_jnt} - hand joint')
-            for child in children:
-                skeleton_hand.append(self.read_skeleton_v2(child))
-
-        return skeleton_hand
-
-
     def read_skeleton_branch(self, joint):
         '''
         Read finger, or single branch, assumed to be a linear joint chain.
@@ -373,8 +328,7 @@ class Hand(appendage.Appendage):
             cmds.joint(jnt, e=True, zso=True, oj='none')
 
     def build_control(self, node, parent=None, size=1):
-        ctrl_rn = rig_name.RigName(node)
-        ctrl_rn.rename(rig_type='ctrl')
+        ctrl_rn = rig_name.RigName(node).rename(rig_type='ctrl')
         ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
         logger.debug(f'Created control: {ctrl}')
         if parent:
@@ -396,6 +350,7 @@ class Hand(appendage.Appendage):
         branch_ctrl_sz = 1
 
         # Build FK controls
+        # Create group for FK controls
         fk_ctrl_grp_rn = rig_name.RigName(side=self.side,
                                           element=self.appendage_name,
                                           control_type='fk',
@@ -403,49 +358,104 @@ class Hand(appendage.Appendage):
                                           maya_type='transform')
         self.fk_ctrl_grp = cmds.createNode('transform', n=fk_ctrl_grp_rn.output())
 
+        # Store FK controls in dict
         self.fk_ctrl = dict()
         # Build start/wrist control
-        start_ctrl = self.build_control(self.start_joint, self.fk_ctrl_grp, hand_ctrl_sz)
+        start_ctrl = utils.create_control(self.start_joint, self.fk_ctrl_grp, hand_ctrl_sz)
         self.fk_ctrl[self.start_joint] = start_ctrl
         # Build hand control
         if self.start_joint != self.hand_jnt:
-            hand_ctrl = self.build_control(self.hand_jnt, start_ctrl, hand_ctrl_sz)
+            hand_ctrl = utils.create_control(self.hand_jnt, start_ctrl, hand_ctrl_sz)
             self.fk_ctrl[self.hand_jnt] = hand_ctrl
         else:
             hand_ctrl = start_ctrl
 
-        # Build finger controls
+        # Build FK finger controls
         for branch in self.skeleton_fk:
-            ctrlfk0 = self.build_control(branch[0], hand_ctrl, branch_ctrl_sz)
-            ctrlfk1 = self.build_control(branch[1], ctrlfk0, branch_ctrl_sz)
-            ctrlfk2 = self.build_control(branch[2], ctrlfk1, branch_ctrl_sz)
+            ctrlfk0 = utils.create_control(branch[0], hand_ctrl, branch_ctrl_sz)
+            ctrlfk1 = utils.create_control(branch[1], ctrlfk0, branch_ctrl_sz)
+            ctrlfk2 = utils.create_control(branch[2], ctrlfk1, branch_ctrl_sz)
             self.fk_ctrl[branch[0]] = ctrlfk0
             self.fk_ctrl[branch[1]] = ctrlfk1
             self.fk_ctrl[branch[2]] = ctrlfk2
 
         # Build IK controls
+        # Create group for IK controls
         ik_ctrl_grp_rn = rig_name.RigName(side=self.side,
                                           element=self.appendage_name,
                                           control_type='ik',
                                           rig_type='ctrl',
                                           maya_type='transform')
         self.ik_ctrl_grp = cmds.createNode('transform', n=ik_ctrl_grp_rn.output())
-
+        # Store IK controls in dict
         self.ik_ctrl = dict()
-        # Build finger controls
+
+        # Build IK finger controls
         for branch in self.skeleton_ik:
-            ctrlik = self.build_control(branch[2], self.ik_ctrl_grp, size=branch_ctrl_sz)
+            ctrlik = utils.create_control(branch[2], self.ik_ctrl_grp, size=branch_ctrl_sz)
             self.ik_ctrl[branch[2]] = ctrlik
 
         self.build_ik()
 
 
     def build_ik(self):
-        # TODO: Use Two-Bone IK class to build IK controls
-        # for branch in self.skeleton_ik:
-        #     finger = two_bone_fkik.TwoBoneFKIK('finger', branch[0],
-        #         self.num_upperTwist_joint, self.num_lowerTwist_joint, self.side)
-        pass
+        pv_ctrl_sz = 1
+        # Create group for PV controls
+        pv_ctrl_grp_rn = rig_name.RigName(side=self.side,
+                                          element=self.appendage_name,
+                                          control_type='ik',
+                                          rig_type='pv',
+                                          maya_type='transform')
+        self.pv_ctrl_grp = cmds.createNode('transform', n=pv_ctrl_grp_rn.output())
+        # Store IK controls in dict
+        self.pv_ctrl = dict()
+
+        # Blended output node, allowing for FK/IK switch
+        name_blend = rig_name.RigName(self.hand_jnt).rename(control_type='switch', rig_type='grp')
+        blend = cmds.createNode('transform', n=name_blend.output())
+        self.blend_matrix = list() # Result blend matrices
+
+        # Build IK
+        for branch_fk, branch_ik in zip(self.skeleton_fk, self.skeleton_ik):
+            fk0, fk1, fk2 = branch_fk
+            ik0, ik1, ik2 = branch_ik
+            # Get IK control for current finger/branch
+            ik_ctrl = self.ik_ctrl[ik2]
+            name_ik_handle = rig_name.RigName(ik_ctrl).rename(rig_type='handle', maya_type='ikrpsolver')
+            # IK handle
+            ik_handle = cmds.ikHandle(sj=ik0, ee=ik2, sol='ikRPsolver',
+                n=name_ik_handle.output())[0]
+            cmds.parent(ik_handle, ik_ctrl) # Connect ctrl to IK handle
+            # Pole vector
+            pv_pos = pole_vector.calculate_pole_vector_position(ik0, ik1, ik2)
+            name_pv_loc = rig_name.RigName(ik_ctrl).rename(rig_type='loc', maya_type='locator')
+            pv_loc = cmds.spaceLocator(p=(pv_pos.x, pv_pos.y, pv_pos.z), n=name_pv_loc.output())[0]
+            name_pv = rig_name.RigName(ik_ctrl).rename(rig_type='pv', maya_type='controller')
+            pv_ctrl = utils.create_control_pv(pv_loc, None, pv_ctrl_sz)
+            cmds.delete(pv_loc)
+            self.pv_ctrl[ik_ctrl] = pv_ctrl
+            cmds.parent(pv_ctrl, self.pv_ctrl_grp)
+
+            # Add each joint to blend node
+            name_blend0 = rig_name.RigName(fk0).remove(control_type=1, rig_type=1, maya_type=1)
+            name_blend1 = rig_name.RigName(fk1).remove(control_type=1, rig_type=1, maya_type=1)
+            name_blend2 = rig_name.RigName(fk2).remove(control_type=1, rig_type=1, maya_type=1)
+            cmds.addAttr(blend, ln=f'{name_blend0}_fkik', nn=f'{name_blend0} FKIK', at='double', min=0, max=1, k=1)
+            cmds.addAttr(blend, ln=f'{name_blend1}_fkik', nn=f'{name_blend1} FKIK', at='double', min=0, max=1, k=1)
+            cmds.addAttr(blend, ln=f'{name_blend2}_fkik', nn=f'{name_blend2} FKIK', at='double', min=0, max=1, k=1)
+            cmds.addAttr(self.output, ln=f'{name_blend0}_fkik', nn=f'{name_blend0} FKIK',
+                at='matrix', min=0, max=1, k=1)
+            cmds.addAttr(self.output, ln=f'{name_blend1}_fkik', nn=f'{name_blend1} FKIK',
+                at='matrix', min=0, max=1, k=1)
+            cmds.addAttr(self.output, ln=f'{name_blend2}_fkik', nn=f'{name_blend2} FKIK',
+                at='matrix', min=0, max=1, k=1)
+
+            #side_region_element_controltype_rigtype_mayatype_position
+            blend_mat0 = utils.blend_skeleton(fk0, ik0, blend, f'{name_blend0}_fkik')
+            blend_mat1 = utils.blend_skeleton(fk1, ik1, blend, f'{name_blend1}_fkik')
+            blend_mat2 = utils.blend_skeleton(fk2, ik2, blend, f'{name_blend2}_fkik')
+
+            self.blend_matrix.append([blend_mat0, blend_mat1, blend_mat2])
 
 
     def connect_outputs(self):
@@ -459,12 +469,25 @@ class Hand(appendage.Appendage):
                 matrix_tools.matrix_parent_constraint(ctrl, jnt)
 
         # Connect IK
-        # TODO
+        # Already handled in build
+
+        # Connect blend, switching between FK/IK
+        for branch_mat, branch_bnd in zip(self.blend_matrix, self.bnd_jnt):
+            for mat, bnd in zip(branch_mat, branch_bnd):
+                parent = cmds.listRelatives(bnd, p=True, typ='joint')
+                if parent:
+                    parent = parent[0]
+                    cmds.connectAttr(f'{parent}.worldInverseMatrix[0]', f'{mat}.matrixIn[1]')
+                    mat_attr = mat.rstrip('_multMatrix')
+                    cmds.connectAttr(f'{mat}.matrixSum', f'{self.output}.{mat_attr}')
+                    cmds.xform(bnd, t=[0, 0, 0], os=True)
 
 
     def cleanup(self):
         '''
         Rename, parent, delete extra nodes, etc..
+        Appendage class groups everything under Hand grp
+        under method finish()
         '''
         # Group skeletons under appendage grp
         cmds.parent(self.start_fk, self.appendage_grp)
@@ -472,6 +495,7 @@ class Hand(appendage.Appendage):
         # Group controls under controls grp
         cmds.parent(self.fk_ctrl_grp, self.controls_grp)
         cmds.parent(self.ik_ctrl_grp, self.controls_grp)
+        cmds.parent(self.pv_ctrl_grp, self.controls_grp)
 
 
 def test():
@@ -481,12 +505,12 @@ def test():
     il.reload(hand)
     hand.test()
     '''
-    lhand1 = Hand('hand', 'lt_wrist_bnd_jnt', 'lt')
+    lhand1 = Hand('hand', 'lt_wrist_bnd_jnt')
     #lhand1 = Hand('hand', 'lt_wrist_bnd_jnt', num_upperTwist_joint=1, num_lowerTwist_joint=1)
     #lhand2 = Hand('hand', 'lt_wrist_bnd_jnt', num_upperTwist_joint=1, num_lowerTwist_joint=None)
     #lhand3 = Hand('hand', 'lt_wrist_bnd_jnt', num_upperTwist_joint=None, num_lowerTwist_joint=1)
     #lhand4 = Hand('hand', 'lt_wrist_bnd_jnt', num_upperTwist_joint=None, num_lowerTwist_joint=None)
-    #rhand1 = Hand('hand', 'rt_wrist_bnd_jnt', 'rt')
+    #rhand1 = Hand('hand', 'rt_wrist_bnd_jnt')
 
     #TODO
     # test scenario where thumb is on separate branch than rest of fingers
