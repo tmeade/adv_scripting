@@ -22,7 +22,7 @@ class Appendage(ABC):
         self.appendage_name = appendage_name
         self.start_joint = start_joint
         self.input_matrix = input_matrix
-        self.controls = dict()
+        self.controls = {'fk': {}, 'ik': {}, 'switches': {}}
         self.skeleton = cmds.listRelatives(self.start_joint, ad=True)
 
 
@@ -102,7 +102,6 @@ class Appendage(ABC):
         return
 
     def finish(self):
-        self.controls = cmds.listRelatives(self.controls_grp)
         cmds.parent(self.controls_grp, self.appendage_grp)
         cmds.parent(self.input, self.appendage_grp)
         cmds.parent(self.output, self.appendage_grp)
