@@ -22,8 +22,7 @@ class Appendage(ABC):
         self.appendage_name = appendage_name
         self.start_joint = start_joint
         self.input_matrix = input_matrix
-        # TODO: Maybe use a dict with fk/ik keys?
-        self.controls = list()
+        self.controls = dict()
         self.skeleton = cmds.listRelatives(self.start_joint, ad=True)
 
 
@@ -31,6 +30,7 @@ class Appendage(ABC):
         self.create_appendage_container()
         self.setup()
         self.build()
+        self.connect_inputs()
         self.connect_outputs()
         self.cleanup()
         self.finish()
@@ -81,9 +81,16 @@ class Appendage(ABC):
         return
 
     @abstractmethod
+    def connect_inputs(self):
+        '''
+        Connect the input matricies from the input node to the root control of the appendage.
+        '''
+        return
+
+    @abstractmethod
     def connect_outputs(self):
         '''
-        Connect the ouput matracies to their corresponding joints in the source skeleton
+        Connect the ouput matricies to their corresponding joints in the source skeleton
         '''
         return
 
