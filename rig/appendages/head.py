@@ -47,7 +47,12 @@ class Head(rap.Appendage):
         self.head_ctrl = utils.create_fk_control(self.bnd_joints['head_joint'],
                                                 connect_output=f'{self.output}.head_joint_matrix',
                                                 parent_control=self.neck_control)
-
+    def connect_inputs(self):
+        '''
+        Connect the input matricies from the input node to the root control of the appendage.
+        '''
+        if self.input_matrix:
+            matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.neck_control)
 
     def connect_outputs(self):
         # Connect the start matrix on the output node to the skeleton

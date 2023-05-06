@@ -108,6 +108,12 @@ class TwoBoneFKIK(appendage.Appendage):
             cmds.connectAttr(mult_matrix_node + '.matrixSum', f'{self.output}.{key[0]}_matrix')
             cmds.xform(bnd_jnt, t = [0, 0, 0], os=True)
 
+    def connect_inputs(self):
+        '''
+        Connect the input matricies from the input node to the root control of the appendage.
+        '''
+        return
+
     def connect_outputs(self):
         # Connect the start matrix on the output node to the skeleton
         for key, joint_name in self.bnd_joints.items():

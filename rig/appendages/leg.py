@@ -139,6 +139,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		cmds.parent(self.toe_ik_control, self.ball_ik_control)
 		cmds.parent(self.toe_ik_handle, self.toe_ik_control)
 		cmds.parent(self.ball_ik_handle, self.ball_ik_control)
+		# TODO: Use self.ik_controls to get the ankleIK handle and parent it here.
 
 	def create_blended_result(self):
 		'''

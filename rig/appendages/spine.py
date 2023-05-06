@@ -19,51 +19,51 @@ class Spine(rap.Appendage):
         rap.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
 
     def setup(self):
-        
+
         # Get the selected joint
         selected_joint = self.start_joint
         child_joint = cmds.listRelatives(selected_joint, ad=True, type="joint")
 
         dv_prefix = 'driver_'
-        
+
         """dv_prefix = rn.RigName(element=self.element, side=self.side,
             control_type='driver', rig_type='jnt', maya_type=None) TypeError: expected string or bytes-like object  """
-        
 
-        # Copy and rename the joint hierarchy 
+
+        # Copy and rename the joint hierarchy
         dv_root_joint = utils.copy_rename_joint_hierarchy(selected_joint, dv_prefix)
-        
-        
+
+
         # make list for ik, fk joints children
         dvchild_list = cmds.listRelatives(dv_root_joint, ad=True, type="joint")
 
         children = cmds.listRelatives(selected_joint, c=True, type="joint")
-        
+
         utils.delete_useless_joint(dv_root_joint, 'spine')
         """
         (root, keyword)
         root : root joint for delete useless joints children
         keyword : Select keywords not to delete
         """
-        
+
         ik_spine_joints = utils.copy_rename_joint_hierarchy(dv_root_joint, "for_ik_")
-        
+
         cmds.parent(ik_spine_joints, world=True)
         ik_spine_joints_list = cmds.ls(type='joint')
         ik_spine_joints_list = [joint for joint in ik_spine_joints_list if 'for_ik_' in joint]
-        
+
         # list for Unparent
         spine_joints_list = cmds.listRelatives(dv_root_joint, ad=True, type='joint')
         spine_joints_list.append(dv_root_joint)
 
         # Unparent each joint in the hierarchy
         cmds.parent(spine_joints_list, world=True)
-        
-        # Delete [odd] joint for binding driver joint 
+
+        # Delete [odd] joint for binding driver joint
         for i, joint in enumerate(spine_joints_list):
             if i % 2 != 0:
                 cmds.delete(spine_joints_list[i])
-        
+
         # Get the selected joint group
         sel_joints = cmds.ls(ik_spine_joints, type="joint")
         # Get the hierarchy of the selected joints
@@ -97,28 +97,28 @@ class Spine(rap.Appendage):
 
         # save on valuable Joint Hierarchy
         root_joint = cmds.ls(ik_spine_joints, dag=True)
-        
+
         # Clean curves, history
         cmds.delete(curve_loft, constructionHistory=True)
 
         cmds.delete(orig_curve)
         cmds.delete(copy_curve)
-        
+
         cmds.select(curve_loft[0])
         cmds.select(root_joint, add=True)
         cmds.UVPin()
-        
+
         # Tried to make as node without select but not moving
         """
         sPin = cmds.createNode('uvPin', n='spineUvPin')
         cmds.connectAttr('spineSetupSurfaceShape.worldSpace', f'{sPin}.deformedGeometry')
         cmds.connectAttr('spineSetupSurfaceShapeOrig.local', f'{sPin}.originalGeometry')
-        
-        
+
+
         for i, joint in enumerate(root_joint):
             cmds.connectAttr(f'spineUvPin.outputMatrix[{i}]', f'{joint}.offsetParentMatrix')
         """
-        
+
         ############################# Old Hair, ik system ################################
         """
         # pymel for createHair command
@@ -156,25 +156,31 @@ class Spine(rap.Appendage):
         cmds.skinCluster("ik_skinC", e=True, mi=3)
 
         cmds.setAttr("spineSetupSurface.visibility", False)
-        
-        
+
+
         # No additional setup needed for setup()
         return
-        
+
     def build(self):
         # Implement build method here
         spine_joints_list = cmds.ls(type='joint')
         spine_joints_list = [joint for joint in spine_joints_list if 'spine_' in joint]
         spine_joints_list = [joint for joint in spine_joints_list if not 'for_ik_' or not 'driver_' in joint]
-        
+
         ik_spine_joints_list = cmds.ls(type='joint')
         ik_spine_joints_list = [joint for joint in ik_spine_joints_list if 'for_ik_' in joint]
-        
+
         for sjoint, ijoint in zip(spine_joints_list, ik_spine_joints_list):
             mt.matrix_parent_constraint(ijoint,sjoint)
 
     def cleanup(self):
         # Implement cleanup method here
+        pass
+
+    def connect_inputs(self):
+        '''
+        Connect the input matricies from the input node to the root control of the appendage.
+        '''
         pass
 
     def connect_outputs(self):
