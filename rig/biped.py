@@ -49,8 +49,8 @@ class Rig():
 
 class Biped(Rig):
     def __init__(self, name, settings):
-        Rig.__init__(self, name, settings)
         self.sides = [rig_name.Side('lt'), rig_name.Side('rt')]
+        Rig.__init__(self, name, settings)
 
     def build(self):
         logger.debug('build')
@@ -62,8 +62,8 @@ class Biped(Rig):
 
     def build_root(self):
         logger.debug('build_root')
-        self.root = appendages.root.Root(appendage_name='root',
-                                    start_joint='root_bnd_jnt',
+        self.root = appendages.root.Root(SETTINGS['Root']['appendage_name'],
+                                    SETTINGS['Root']['start_joint'],
                                     input_matrix=f'{self.global_control}.worldMatrix[0]')
         cmds.parent(self.root.appendage_grp, self.rig_grp)
 
@@ -75,6 +75,8 @@ class Biped(Rig):
 
     def build_arms(self):
         logger.debug('build_arms')
+        for side in self.sides:
+            pass
 
     def build_legs(self):
         logger.debug('build_legs')
