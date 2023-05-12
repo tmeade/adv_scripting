@@ -108,6 +108,11 @@ class Biped(Rig):
 
     def build_head(self):
         logger.debug('build_head')
+        self.head = appendages.head.Head(SETTINGS['Head']['appendage_name'],
+                                    SETTINGS['Head']['start_joint'],
+                                    SETTINGS['Head']['num_neck_joints'],
+                                    input_matrix=f'{self.global_control}.worldMatrix[0]')
+        cmds.parent(self.head.appendage_grp, self.rig_grp)
 
     def build_arms(self):
         logger.debug('build_arms')
