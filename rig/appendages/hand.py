@@ -508,7 +508,12 @@ class Hand(appendage.Appendage):
             self.blend_matrix.append([mat_blend0, mat_blend1, mat_blend2])
             self.blend_attribute.append([attr_blend0, attr_blend1, attr_blend2])
 
-
+    def connect_inputs(self):
+        '''
+        Connect the input matricies from the input node to the root control of the appendage.
+        '''
+        return
+        
     def connect_outputs(self):
         '''
         Connect the output matrices to their corresponding joints in the source skeleton

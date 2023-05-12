@@ -28,10 +28,11 @@ class Root(appendage.Appendage):
         self.root_ctrl = utils.create_fk_control(self.start_joint,
                                                  connect_output=f'{self.output}.root_joint_matrix')
 
-    def connect_outputs(self):
+    def connect_inputs(self):
         if self.input_matrix:
             matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.root_ctrl)
 
+    def connect_outputs(self):
         # Connect the start matrix on the output node to the skeleton
         cmds.connectAttr(f'{self.output}.root_joint_matrix', f'{self.start_joint}.offsetParentMatrix')
         cmds.setAttr(f'{self.start_joint}.jointOrient', 0,0,0)
@@ -40,3 +41,4 @@ class Root(appendage.Appendage):
     def cleanup(self):
         # Parent the controls to the control group.
         cmds.parent(self.root_ctrl, self.controls_grp)
+        self.controls['fk']['root_ctrl'] = self.root_ctrl
