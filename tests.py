@@ -64,5 +64,13 @@ class TestRootAppendage(unittest.TestCase):
         rotation = cmds.xform(self.joint, query=True, ws=True, ro=True)
         self.assertEqual(rotation, [10.0, 10.0, 10.0])
 
+    def test_display_color():
+        test_grp = cmds.createNode('transform', n='test_display_color')
+        for idx in range(1,32):
+            color_jnt = cmds.createNode('joint', n=f'color_jnt_{idx}')
+            cmds.parent(color_jnt, test_grp)
+            cmds.xform(color_jnt, t=(0,-idx,0))
+            utils.display_color(node, idx)
+
 if __name__ == '__main__':
     unittest.main()
