@@ -273,9 +273,9 @@ def create_control_joints_from_skeleton(start_joint,
     return control_jnt
 
 
-# CREATE CONTROLS & TRANSFORMS =========================================
+# CREATE CONTROLS & GROUP ==============================================
 
-def create_control(node, parent=None, size=1):
+def create_control(node, parent=None, size=1, name=None):
     '''
     Build a nurbs circle control at position of node.
     Size determines circle's radius. Move control under parent if provided.
@@ -287,8 +287,11 @@ def create_control(node, parent=None, size=1):
 
     Returns name of created control.
     '''
-    ctrl_rn = rig_name.RigName(node).rename(rig_type='ctrl')
-    ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
+    if name:
+        ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=name)[0]
+    else:
+        ctrl_rn = rig_name.RigName(node).rename(rig_type='ctrl')
+        ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
     #logger.debug(f'Created control: {ctrl}')
     if parent:
         cmds.parent(ctrl, parent)
@@ -374,26 +377,71 @@ def create_group(node, parent=None):
     return grp
 
 
+# MAKE IDENTITY ========================================================
+
+def make_identity(node):
+    '''
+    Make identity on current node. Ignore locked attributes.
+    Reset transforms including translate, rotate, scale, and joint orient.
+    '''
+    for attribute in ["translate", "rotate", "scale", "jointOrient"]:
+        value = 1 if attribute == "scale" else 0
+        for axis in "XYZ":
+            if cmds.attributeQuery(attribute + axis, node=node, exists=True):
+                attribute_name = "{}.{}{}".format(node, attribute, axis)
+                if not cmds.getAttr(attribute_name, lock=True):
+                    cmds.setAttr(attribute_name, value)
+
+
 # BLEND SKELETON =======================================================
 
-def blend_skeleton(fk_joint, ik_joint, blend_node, blend_attribute='fkik'):
+def blend_skeleton(fk_joint, ik_joint, blend_switch, blend_attribute):
     '''
+    Creates blendMatrix and multMatrix to switch between joints for FK/IK control.
+
     Arguments
-    fk_joint (str): string name of FK joint
-    ik_joint (str): string name of IK joint
-    blend_node (str): node to connect switch attribute
+    fk_joint (str): name of FK joint
+    ik_joint (str): name of IK joint
+    blend_switch (str): node to connect switch attribute / envelope
     blend_attribute (str): name of switch attribute
+
+    Returns name of resulting multMatrix
     '''
-    blend_rn = rig_name.RigName(f'{blend_attribute}_util_blendMatrix')
-    blend_mat = blend_rn.output()
-    cmds.createNode('blendMatrix', n=blend_mat)
+    # Create blendMatrix node
+    blend_mat = cmds.createNode('blendMatrix', n=f'{blend_attribute}_blendMatrix')
     cmds.connectAttr(f'{fk_joint}.worldMatrix', f'{blend_mat}.inputMatrix', f=True)
     cmds.connectAttr(f'{ik_joint}.worldMatrix', f'{blend_mat}.target[0].targetMatrix', f=True)
-    cmds.connectAttr(f'{blend_node}.{blend_attribute}', f'{blend_mat}.envelope', f=True)
+    cmds.connectAttr(f'{blend_switch}.{blend_attribute}', f'{blend_mat}.envelope', f=True)
 
-    result_mat = cmds.createNode('multMatrix', n=f'{blend_attribute}_multMatrix')
-    cmds.connectAttr(f'{blend_mat}.outputMatrix', f'{result_mat}.matrixIn[0]', f=True)
-    return result_mat
+    # Create multMatrix node
+    mult_mat = cmds.createNode('multMatrix', n=f'{blend_attribute}_multMatrix')
+    cmds.connectAttr(f'{blend_mat}.outputMatrix', f'{mult_mat}.matrixIn[0]', f=True)
+    return mult_mat
+
+def blend_skeleton(fk_joint, ik_joint, blend_switch, blend_output, blend_attribute):
+    '''
+    Creates blendMatrix and multMatrix to switch between joints for FK/IK control.
+
+    Arguments
+    fk_joint (str): name of FK joint
+    ik_joint (str): name of IK joint
+    blend_switch (str): node to connect switch attribute / envelope
+    blend_output (str): node to connect output of multMatrix
+    blend_attribute (str): name of switch attribute
+
+    Returns name of resulting multMatrix
+    '''
+    # Create blendMatrix node
+    blend_mat = cmds.createNode('blendMatrix', n=f'{blend_attribute}_blendMatrix')
+    cmds.connectAttr(f'{fk_joint}.worldMatrix', f'{blend_mat}.inputMatrix', f=True)
+    cmds.connectAttr(f'{ik_joint}.worldMatrix', f'{blend_mat}.target[0].targetMatrix', f=True)
+    cmds.connectAttr(f'{blend_switch}.{blend_attribute}', f'{blend_mat}.envelope', f=True)
+
+    # Create multMatrix node
+    mult_mat = cmds.createNode('multMatrix', n=f'{blend_attribute}_multMatrix')
+    cmds.connectAttr(f'{blend_mat}.outputMatrix', f'{mult_mat}.matrixIn[0]', f=True)
+    cmds.connectAttr(f'{mult_mat}.matrixSum', f'{blend_output}.{blend_attribute}')
+    return mult_mat
 
 
 # LOCK / UNLOCK ATTRIBUTES =============================================
@@ -473,6 +521,48 @@ def lock_rotate(node, raxis='Z', limits=False):
             if cmds.attributeQuery(f'rotate{axis}', node=node, exists=True):
                 cmds.setAttr(f'{node}.rotate{axis}', k=True, lock=True)
 
+# SET DISPLAY COLOR ====================================================
+
+def display_color(node, color_index):
+    '''
+    Change display color using Maya's Index color.
+    To change color manually, see Display > Wireframe Color
+
+    Color Index is as follows [1,31]:
+    1-black
+    2-grey
+    3-light grey
+    4-magenta
+    5-navy blue
+    6-primary blue
+    7-green
+    8-purple
+    9-pink
+    10-peach
+    11-brown
+    12-orange
+    13-primary red
+    14-primary green
+    15-blue
+    16-white
+    17-yellow
+    18-pastel blue
+    19-pastel green
+    20-pastel pink
+    21-pastel peach
+    22-pastel yellow
+    23-light green
+    24-light brown
+    25-light yellow
+    26-light yellow-green
+    27-light green
+    28-light cyan
+    29-light blue
+    30-light purple
+    31-light pink
+    '''
+    # Color rgb values
+    cmds.color(node, rgb=cmds.colorIndex(color_index, q=True))
 
 # GIRYANG'S JOINT UTILITIES ============================================
 
