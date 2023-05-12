@@ -62,13 +62,16 @@ class Biped(Rig):
 
     def build_root(self):
         logger.debug('build_root')
-        self.root = appendages.root.Root(SETTINGS['Root']['appendage_name'],
-                                    SETTINGS['Root']['start_joint'],
+        self.root = appendages.root.Root(self.settings['Root']['appendage_name'],
+                                    self.settings['Root']['start_joint'],
                                     input_matrix=f'{self.global_control}.worldMatrix[0]')
         cmds.parent(self.root.appendage_grp, self.rig_grp)
 
     def build_spine(self):
         logger.debug('build_root')
+        self.spine = spine.Spine(self.settings['Spine']['appendage_name'],
+                                self.settings['Spine']['start_joint'],
+                                input_matrix=f'{self.root.controls['fk']['root']}.worldMatrix[0]'))
 
     def build_head(self):
         logger.debug('build_head')
@@ -80,11 +83,11 @@ class Biped(Rig):
 
     def build_legs(self):
         logger.debug('build_legs')
-        self.leg = appendages.leg.Leg(SETTINGS['Leg']['appendage_name'],
-                                    SETTINGS['Leg']['start_joint'],
+        self.leg = appendages.leg.Leg(self.settings['Leg']['appendage_name'],
+                                    self.settings['Leg']['start_joint'],
                                     input_matrix=f'{self.global_control}.worldMatrix[0]')
         cmds.parent(self.leg.appendage_grp, self.rig_grp)
-        
+
 
 
     def build_hands(self):
