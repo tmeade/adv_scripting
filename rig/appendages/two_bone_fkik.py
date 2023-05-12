@@ -182,14 +182,28 @@ def ik_setup(ik_skeleton , control_to_local_orient = False):
     end, end_rn =  ik_skeleton[2]
     side = str(root_rn.side)
     element = str(root_rn.element)
+
+    #pole vector
+    #cmds.rotate(0,0,25,mid)
+    name_pv = rig_name.RigName(element=element, side=side,
+        control_type='ik', rig_type='pv', maya_type='controller')
+    pv_position = pole_vector.calculate_pole_vector_position(root, mid, end)
+    pv_control = cmds.createNode('transform', n=str(name_pv))
+    # TODO: place pole vector with offsetParentMatrix
+    cmds.move(pv_position.x, pv_position.y, pv_position.z, pv_control)
+    cmds.makeIdentity(pv_control, apply=True, t=True, r=True, s=True)
+    #cmds.rotate(0,0,0,mid)
+
     name_ik_handle = rig_name.RigName(element=element, side=side,
         control_type='ik', rig_type='handle', maya_type='ikrpsolver')
     name_ik_control = rig_name.RigName(element=element, side=side,
         control_type='ik', rig_type='ctrl', maya_type='controller')
 
+
     #IK handle
     ik_handle = cmds.ikHandle(sj=root, ee=end, sol='ikRPsolver', n=str(name_ik_handle))[0]
     ik_control = cmds.createNode('transform', n=str(name_ik_control))
+    cmds.poleVectorConstraint(pv_control, ik_handle)
 
     # Orient the control to the local joint.
     # hrmmm??
@@ -198,16 +212,9 @@ def ik_setup(ik_skeleton , control_to_local_orient = False):
 
     matrix_tools.snap_offset_parent_matrix(ik_control, ik_handle)
     cmds.parent(ik_handle, ik_control)
+    #matrix_tools.matrix_parent_constraint(ik_control, end)
 
-    #pole vector
-    name_pv = rig_name.RigName(element=element, side=side,
-        control_type='ik', rig_type='pv', maya_type='controller')
-    pv_position = pole_vector.calculate_pole_vector_position(root, mid, end)
-    pv_control = cmds.createNode('transform', n=str(name_pv))
-    # TODO: place pole vector with offsetParentMatrix
-    cmds.move(pv_position.x, pv_position.y, pv_position.z, pv_control)
-    cmds.makeIdentity(pv_control, apply=True, t=True, r=True, s=True)
-    cmds.poleVectorConstraint(pv_control, ik_handle)\
+
 
     return ik_control, pv_control
 
