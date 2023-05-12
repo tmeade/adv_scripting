@@ -368,14 +368,16 @@ def create_control_copy(control, node, parent=None, size=1):
     matrix_tools.snap_offset_parent_matrix(ctrl, node)
     return ctrl
 
-def create_group(node, parent=None):
+def create_group(node, parent=None, name=None):
     '''
     Build an empty group / transform at position of node.
     Move group under parent if provided.
     '''
-    grp_rn = rig_name.RigName(node)
-    grp_rn.rename(rig_type='grp', maya_type='transform')
-    grp = cmds.createNode('transform', n=grp_rn.output())
+    if name:
+        grp = cmds.createNode('transform', n=name)
+    else:
+        grp_rn = rig_name.RigName(node).rename(rig_type='grp', maya_type='transform')
+        grp = cmds.createNode('transform', n=grp_rn.output())
     #logger.debug(f'Created group: {grp}')
     if parent:
         cmds.parent(grp, parent)

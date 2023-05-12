@@ -16,8 +16,21 @@ SETTINGS = {'Root': {
             'Head': {
                 'appendage_name': 'head',
                 'start_joint': 'neck_bnd_jnt',
-                'num_neck_joints': 0}
+                'num_neck_joints': 0},
+            'Hand_Left': {
+                'appendage_name': 'hand',
+                'start_joint': 'lt_wrist_bnd_jnt',
+                'num_upperTwist_joint': None,
+                'num_lowerTwist_joint': None,
+                'input_matrix': 'lt_lower_arm_bnd_jnt_02.worldMatrix[0]' },
+            'Hand_Right': {
+                'appendage_name': 'hand',
+                'start_joint': 'rt_wrist_bnd_jnt',
+                'num_upperTwist_joint': None,
+                'num_lowerTwist_joint': None}
+                'input_matrix': 'rt_lower_arm_bnd_jnt_02.worldMatrix[0]' }
             }
+
 
 class Rig():
     def __init__(self, name, settings):
@@ -46,6 +59,7 @@ class Rig():
 
     def connect_control_shapes(self):
         logger.debug('connect_control_shapes')
+
 
 class Biped(Rig):
     def __init__(self, name, settings):
@@ -91,4 +105,16 @@ class Biped(Rig):
 
 
     def build_hands(self):
-        logger.debug('build_hands')
+        logger.debug('build_hand')
+        self.hand_lt = appendages.hand.Hand(SETTINGS['Hand_Left']['appendage_name'],
+                                            SETTINGS['Hand_Left']['start_joint'],
+                                            SETTINGS['Hand_Left']['num_upperTwist_joint'],
+                                            SETTINGS['Hand_Left']['num_lowerTwist_joint'],
+                                            SETTINGS['Hand_Left']['input_matrix'])
+        self.hand_rt = appendages.hand.Hand(SETTINGS['Hand_Right']['appendage_name'],
+                                            SETTINGS['Hand_Right']['start_joint'],
+                                            SETTINGS['Hand_Right']['num_upperTwist_joint'],
+                                            SETTINGS['Hand_Right']['num_lowerTwist_joint'],
+                                            SETTINGS['Hand_Right']['input_matrix'])
+        cmds.parent(self.hand_lt.appendage_grp, self.rig_grp)
+        cmds.parent(self.hand_rt.appendage_grp, self.rig_grp)
