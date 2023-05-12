@@ -23,7 +23,6 @@ import adv_scripting.pole_vector as pole_vector
 import logging
 import copy
 import importlib as il
-il.reload(appendage)
 il.reload(utils)
 
 logger = logging.getLogger()
@@ -83,6 +82,7 @@ class Hand(appendage.Appendage):
         # e.g. 'lt_hand_bnd_jnt'
         self.wrist_bnd = start_joint
         self.hand_bnd = None
+        self.thumb_bnd = None
 
         self.fk_ctrl = dict() # List of fk controls
         self.ik_ctrl = dict() # List of ik controls, one for each branch/finger
@@ -176,8 +176,8 @@ class Hand(appendage.Appendage):
             logger.debug(f'\t{branch}')
 
         # Change display color for fk,ik skeleton
-        utils.display_color(wrist_fk, 6) # blue IK skeleton
-        utils.display_color(wrist_ik, 8) # purple IK skeleton
+        utils.display_color(wrist_fk, 6) # Blue IK skeleton
+        utils.display_color(wrist_ik, 8) # Burple IK skeleton
 
         # Create FK joint group
         fk_jnt_grp = rig_name.RigName(side=self.side,
@@ -273,14 +273,15 @@ class Hand(appendage.Appendage):
         elif len(children) == 1: # Walk down joint chain
             skeleton_hand = self.read_skeleton(children[0])
         elif len(children) == 2: # Branch split
-            # TODO check if this part works
             split_branch0 = self.has_split_skeleton_branch(children[0])
             split_branch1 = self.has_split_skeleton_branch(children[1])
             # Check if thumb branch splits before hand joint
             if split_branch0: # branch1 is thumb
+                self.thumb_bnd= children[1]
                 skeleton_hand = self.read_skeleton(children[0])
                 skeleton_hand.append(self.read_skeleton_branch(children[1]))
             elif split_branch1: # branch0 is thumb
+                self.thumb_bnd = children[0]
                 skeleton_hand = self.read_skeleton(children[1])
                 skeleton_hand.append(self.read_skeleton_branch(children[0]))
             else: # Hand only consists of two branches
@@ -312,10 +313,10 @@ class Hand(appendage.Appendage):
     def has_split_skeleton_branch(self, joint):
         if not joint: return False
         children = cmds.listRelatives(joint, typ='joint') or []
-        if len(children) > 1:
-            return True
-        else:
+        if len(children) == 1:
             return self.has_split_skeleton_branch(children[0])
+        elif len(children) > 1:
+            return True
 
 
     def freeze_joint(self, jnt):
@@ -354,10 +355,10 @@ class Hand(appendage.Appendage):
         else:
             cmds.joint(jnt, e=True, zso=True, oj='none')
 
+
     def build_control(self, node, parent=None, size=1):
         ctrl_rn = rig_name.RigName(node).rename(rig_type='ctrl')
         ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
-        #logger.debug(f'Created control: {ctrl}')
         if parent:
             cmds.parent(ctrl, parent)
             # modify ctrl's transform to match parent
@@ -367,6 +368,7 @@ class Hand(appendage.Appendage):
         # match ctrl's transform to node
         matrix_tools.snap_offset_parent_matrix(ctrl, node)
         return ctrl
+
 
     def build(self):
         '''
@@ -382,7 +384,7 @@ class Hand(appendage.Appendage):
         # Build hand bnd control
         if self.wrist_bnd != self.hand_bnd:
             hand_ctrl = utils.create_group(self.hand_bnd, wrist_ctrl)
-            utils.display_color(hand_ctrl, 15)
+            utils.display_color(hand_ctrl, 15) # Blue display color
             self.fk_ctrl[self.hand_bnd] = hand_ctrl
         else:
             hand_ctrl = wrist_ctrl
@@ -395,17 +397,24 @@ class Hand(appendage.Appendage):
                                           rig_type='ctrl',
                                           maya_type='transform').output()
         self.fk_ctrl_grp = cmds.createNode('transform', n=fk_ctrl_grp)
-        # Match transforms of fk_jnt_grp and fk_ctrl_grp to hand
+        # Match transforms of fk_ctrl_grp to hand
         matrix_tools.snap_offset_parent_matrix(self.fk_ctrl_grp, hand_ctrl)
+        # Constrain FK joints to controls
         matrix_tools.matrix_parent_constraint(hand_ctrl, self.fk_ctrl_grp)
         matrix_tools.matrix_parent_constraint(hand_ctrl, self.fk_jnt_grp)
 
         # Build FK finger controls
+        thumb_fk = None
+        if self.thumb_bnd: # Thumb is separate from hand jnt
+            thumb_fk = rig_name.RigName(self.thumb_bnd).rename(control_type='fk').output()
         for branch in self.skeleton_fk:
-            ctrlfk0 = utils.create_control(branch[0], fk_ctrl_grp, branch_ctrl_sz)
+            if branch[0] == thumb_fk:
+                ctrlfk0 = utils.create_control(branch[0], wrist_ctrl, branch_ctrl_sz)
+            else:
+                ctrlfk0 = utils.create_control(branch[0], fk_ctrl_grp, branch_ctrl_sz)
             ctrlfk1 = utils.create_control(branch[1], ctrlfk0, branch_ctrl_sz)
             ctrlfk2 = utils.create_control(branch[2], ctrlfk1, branch_ctrl_sz)
-            utils.display_color(ctrlfk0, 15)
+            utils.display_color(ctrlfk0, 15) # Blue display color
             utils.display_color(ctrlfk1, 15)
             utils.display_color(ctrlfk2, 15)
             self.fk_ctrl[branch[0]] = ctrlfk0
@@ -420,20 +429,30 @@ class Hand(appendage.Appendage):
                                           rig_type='ctrl',
                                           maya_type='transform').output()
         self.ik_ctrl_grp = cmds.createNode('transform', n=ik_ctrl_grp)
-        # Match transforms of ik_jnt_grp and ik_ctrl_grp to hand
+        # Match transforms of ik_ctrl_grp to hand
         matrix_tools.snap_offset_parent_matrix(self.ik_ctrl_grp, hand_ctrl)
+        # Constrain IK joints to controls
         matrix_tools.matrix_parent_constraint(hand_ctrl, self.ik_jnt_grp)
         matrix_tools.matrix_parent_constraint(hand_ctrl, self.ik_ctrl_grp)
 
         # Build IK finger controls
+        thumb_ik = None
+        if self.thumb_bnd:
+            thumb_ik = rig_name.RigName(self.thumb_bnd).rename(control_type='ik').output()
         for branch in self.skeleton_ik:
-            ctrlik = utils.create_control(branch[2], ik_ctrl_grp, size=branch_ctrl_sz)
-            utils.display_color(ctrlik, 10)
+            if branch[0] == thumb_ik:
+                ctrlik = utils.create_control(branch[2], wrist_ctrl, size=branch_ctrl_sz)
+            else:
+                ctrlik = utils.create_control(branch[2], ik_ctrl_grp, size=branch_ctrl_sz)
+            utils.display_color(ctrlik, 10) # Peach display color
             self.ik_ctrl[branch[2]] = ctrlik
+
         self.build_ik()
+
 
     def build_ik(self):
         pv_ctrl_sz = 1
+
         # Create group for PV controls
         pv_ctrl_grp_rn = rig_name.RigName(side=self.side,
                                           element=self.appendage_name,
@@ -470,15 +489,10 @@ class Hand(appendage.Appendage):
             matrix_tools.matrix_parent_constraint(ik_ctrl, ik_handle)
             # Pole vector
             pv_pos = pole_vector.calculate_pole_vector_position(ik0, ik1, ik2)
-            #TODO check pv position
-            logger.debug(f'pole vector - x:{pv_pos.x} y:{pv_pos.y} z:{pv_pos.z}')
-            name_pv_loc = rig_name.RigName(ik_ctrl).rename(rig_type='loc', maya_type='locator')
-            pv_loc = cmds.spaceLocator(p=(pv_pos.x, pv_pos.y, pv_pos.z), n=name_pv_loc.output())[0]
             name_pv = rig_name.RigName(ik_ctrl).rename(rig_type='pv', maya_type='controller')
-            pv_ctrl = utils.create_control_pv(pv_loc, None, pv_ctrl_sz)
-            #cmds.delete(pv_loc)
+            pv_ctrl = utils.create_control_pv(pv_pos, name_pv.output(), ik_handle, self.pv_ctrl_grp, pv_ctrl_sz)
             self.pv_ctrl[ik_ctrl] = pv_ctrl
-            cmds.parent(pv_ctrl, self.pv_ctrl_grp, a=True)
+            #cmds.parent(pv_ctrl, self.pv_ctrl_grp, a=True)
 
             # Name each blend node based on name of FK joint
             name_blend0 = rig_name.RigName(fk0).remove(control_type=1, rig_type=1, maya_type=1).output()
@@ -498,7 +512,6 @@ class Hand(appendage.Appendage):
             cmds.addAttr(self.output, ln=attr_blend0, nn=f'{name_blend0} FKIK', at='matrix', k=0)
             cmds.addAttr(self.output, ln=attr_blend1, nn=f'{name_blend1} FKIK', at='matrix', k=0)
             cmds.addAttr(self.output, ln=attr_blend2, nn=f'{name_blend2} FKIK', at='matrix', k=0)
-            logger.debug(f'OUTPUT {self.output}')
 
             # blend_switch -> blendMatrix -> multMatrix -> output
             # Create blendMatrix and multMatrix nodes for switching FKIK
@@ -508,15 +521,10 @@ class Hand(appendage.Appendage):
             self.blend_matrix.append([mat_blend0, mat_blend1, mat_blend2])
             self.blend_attribute.append([attr_blend0, attr_blend1, attr_blend2])
 
+
     def connect_inputs(self):
         '''
         Connect the input matricies from the input node to the root control of the appendage.
-        '''
-        return
-        
-    def connect_outputs(self):
-        '''
-        Connect the output matrices to their corresponding joints in the source skeleton
         '''
         wrist_ctrl = self.fk_ctrl[self.wrist_bnd]
         # Connect input to wrist ctrl
@@ -529,7 +537,12 @@ class Hand(appendage.Appendage):
             hand_ctrl = self.fk_ctrl[self.hand_bnd]
             matrix_tools.matrix_parent_constraint(hand_ctrl, self.hand_bnd)
 
-        # Connect visibility. Create reverse node
+
+    def connect_outputs(self):
+        '''
+        Connect the output matrices to their corresponding joints in the source skeleton
+        '''
+        # Connect visibility
         reverse = cmds.createNode('reverse', n=f'{self.appendage_name}_visibility_reverse')
         cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{reverse}.inputX')
         cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{self.ik_jnt_grp}.visibility')
@@ -541,10 +554,16 @@ class Hand(appendage.Appendage):
         # Connect FK
         for branch in self.skeleton_fk:
             for jnt in branch:
-                ctrl = self.fk_ctrl[jnt]
-                matrix_tools.matrix_parent_constraint(ctrl, jnt)
+                fk_ctrl = self.fk_ctrl[jnt]
+                matrix_tools.matrix_parent_constraint(fk_ctrl, jnt)
 
-        # Connect IK already done in build
+        # Connect IK
+        for branch in self.skeleton_ik:
+            ik_ctrl = self.ik_ctrl[branch[2]]
+            # Connect rotations to behave as orient constraint
+            cmds.connectAttr(f'{ik_ctrl}.rotateX', f'{branch[2]}.rotateX')
+            cmds.connectAttr(f'{ik_ctrl}.rotateY', f'{branch[2]}.rotateY')
+            cmds.connectAttr(f'{ik_ctrl}.rotateZ', f'{branch[2]}.rotateZ')
 
         # multMatrix -> output -> bnd jnt
         # Connect multMatrix to output, connect output to bnd jnt

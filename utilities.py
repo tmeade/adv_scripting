@@ -8,6 +8,7 @@ util.rename_skeleton_bnd('root')
 Test control skeleton setup / duplicating joints using
 util.create_control_joints_from_skeleton('lt_shoulder_bnd_jnt', 'lt_hand_bnd_jnt', 'fk', 1, 1)
 '''
+import maya.api.OpenMaya as om
 import adv_scripting.rig_name as rig_name
 import adv_scripting.matrix_tools as matrix_tools
 import maya.cmds as cmds
@@ -292,9 +293,8 @@ def create_control(node, parent=None, size=1, name=None):
     else:
         ctrl_rn = rig_name.RigName(node).rename(rig_type='ctrl')
         ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
-    #logger.debug(f'Created control: {ctrl}')
     if parent:
-        cmds.parent(ctrl, parent)
+        cmds.parent(ctrl, parent, a=True)
         # modify ctrl's transform to match parent
         cmds.matchTransform(ctrl, parent, pos=1, rot=1, scl=1, piv=1)
         # freeze transformations
@@ -303,30 +303,41 @@ def create_control(node, parent=None, size=1, name=None):
     matrix_tools.snap_offset_parent_matrix(ctrl, node)
     return ctrl
 
-def create_control_pv(node, parent=None, size=1):
+def create_control_pv(pv_pos, pv_name, ik_handle, parent=None, size=1):
     '''
     Build a nurbs circle control at position of node.
     Size determines circle's radius. Move control under parent if provided.
 
     Arguments:
-    node (str): node to match transforms and position of control
+    pos (float tuple): (x,y,z) position of pole vector
     parent (str): parent of control, if any
     size (str): control radius
 
     Returns name of created control.
     '''
-    ctrl_rn = rig_name.RigName(node).rename(rig_type='pv').remove(maya_type=1)
-    ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
-    #logger.debug(f'Created control: {ctrl}')
+    # Create pyramid nurbs ctrl
+    pts_pyramid = [\
+        [0,-0.5,-1], [1,-0.5,0], [0,-0.5,1], [-1,-0.5,0], [0,-0.5,-1],
+        [0,0.5,0], [0,-0.5,1], [1,-0.5,0], [0,0.5,0], [-1,-0.5,0]]
+    pv_ctrl = cmds.curve(d=1, p=pts_pyramid, n=pv_name)
+    cmds.xform(pv_ctrl, s=(size,size,size))
+    cmds.makeIdentity(pv_ctrl, apply=True, t=1, r=1, s=1, n=0)
+
+    # Parent pv under parent if provided
     if parent:
-        cmds.parent(ctrl, parent)
+        cmds.parent(pv_ctrl, parent, a=True)
         # modify ctrl's transform to match parent
-        cmds.matchTransform(ctrl, parent, pos=1, rot=1, scl=1, piv=1)
+        cmds.matchTransform(pv_ctrl, parent, pos=1, rot=1, scl=1, piv=1)
         # freeze transformations
-        cmds.makeIdentity(ctrl, apply=True, t=1, r=1, s=1, n=0)
-    # match ctrl's transform to node
-    matrix_tools.snap_offset_parent_matrix(ctrl, node)
-    return ctrl
+        cmds.makeIdentity(pv_ctrl, apply=True, t=1, r=1, s=1, n=0)
+    # move pv_ctrl to absolute position
+    cmds.move(pv_pos.x, pv_pos.y, pv_pos.z, pv_ctrl, a=True)
+    # transfer values to offsetParentMatrix
+    transform_mat = om.MMatrix(cmds.xform(pv_ctrl, q=True, m=True, ws=False))
+    cmds.setAttr(f'{pv_ctrl}.offsetParentMatrix', transform_mat, typ='matrix')
+    make_identity(pv_ctrl)
+    cmds.poleVectorConstraint(pv_ctrl, ik_handle)
+    return pv_ctrl
 
 def create_control_copy(control, node, parent=None, size=1):
     '''
