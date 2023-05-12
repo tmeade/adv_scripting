@@ -294,7 +294,7 @@ def create_control(node, parent=None, size=1, name=None):
         ctrl_rn = rig_name.RigName(node).rename(rig_type='ctrl')
         ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
     if parent:
-        cmds.parent(ctrl, parent)
+        cmds.parent(ctrl, parent, a=True)
         # modify ctrl's transform to match parent
         cmds.matchTransform(ctrl, parent, pos=1, rot=1, scl=1, piv=1)
         # freeze transformations

@@ -277,7 +277,7 @@ class Hand(appendage.Appendage):
             split_branch1 = self.has_split_skeleton_branch(children[1])
             # Check if thumb branch splits before hand joint
             if split_branch0: # branch1 is thumb
-                self.thumb_bnd = children[1]
+                self.thumb_bnd= children[1]
                 skeleton_hand = self.read_skeleton(children[0])
                 skeleton_hand.append(self.read_skeleton_branch(children[1]))
             elif split_branch1: # branch0 is thumb
@@ -397,19 +397,18 @@ class Hand(appendage.Appendage):
                                           rig_type='ctrl',
                                           maya_type='transform').output()
         self.fk_ctrl_grp = cmds.createNode('transform', n=fk_ctrl_grp)
-        # Match transforms of fk_jnt_grp and fk_ctrl_grp to hand
+        # Match transforms of fk_ctrl_grp to hand
         matrix_tools.snap_offset_parent_matrix(self.fk_ctrl_grp, hand_ctrl)
-        if self.thumb_bnd: # Thumb is separate from hand jnt
-            #matrix_tools.matrix_parent_constraint(wrist_ctrl, self.thumb__ctrl[0])
-            cmds.parent(self.thumb_ctrl[0], wrist_ctrl)
-            matrix_tools.matrix_parent_constraint(wrist_ctrl, self.thumb__bnd[0])
-        else:
-            matrix_tools.matrix_parent_constraint(hand_ctrl, self.fk_ctrl_grp)
-            matrix_tools.matrix_parent_constraint(hand_ctrl, self.fk_jnt_grp)
+        # Constrain FK joints to controls
+        matrix_tools.matrix_parent_constraint(hand_ctrl, self.fk_ctrl_grp)
+        matrix_tools.matrix_parent_constraint(hand_ctrl, self.fk_jnt_grp)
 
         # Build FK finger controls
+        thumb_fk = None
+        if self.thumb_bnd: # Thumb is separate from hand jnt
+            thumb_fk = rig_name.RigName(self.thumb_bnd).rename(control_type='fk').output()
         for branch in self.skeleton_fk:
-            if self.thumb_bnd:
+            if branch[0] == thumb_fk:
                 ctrlfk0 = utils.create_control(branch[0], wrist_ctrl, branch_ctrl_sz)
             else:
                 ctrlfk0 = utils.create_control(branch[0], fk_ctrl_grp, branch_ctrl_sz)
@@ -430,21 +429,24 @@ class Hand(appendage.Appendage):
                                           rig_type='ctrl',
                                           maya_type='transform').output()
         self.ik_ctrl_grp = cmds.createNode('transform', n=ik_ctrl_grp)
-        # Match transforms of ik_jnt_grp and ik_ctrl_grp to hand
+        # Match transforms of ik_ctrl_grp to hand
         matrix_tools.snap_offset_parent_matrix(self.ik_ctrl_grp, hand_ctrl)
-        if self.thumb_bnd:
-            matrix_tools.matrix_parent_constraint(wrist_ctrl, self.thumb_bnd[0])
+        # Constrain IK joints to controls
         matrix_tools.matrix_parent_constraint(hand_ctrl, self.ik_jnt_grp)
         matrix_tools.matrix_parent_constraint(hand_ctrl, self.ik_ctrl_grp)
 
         # Build IK finger controls
+        thumb_ik = None
+        if self.thumb_bnd:
+            thumb_ik = rig_name.RigName(self.thumb_bnd).rename(control_type='ik').output()
         for branch in self.skeleton_ik:
-            if self.thumb_bnd:
+            if branch[0] == thumb_ik:
                 ctrlik = utils.create_control(branch[2], wrist_ctrl, size=branch_ctrl_sz)
             else:
                 ctrlik = utils.create_control(branch[2], ik_ctrl_grp, size=branch_ctrl_sz)
             utils.display_color(ctrlik, 10) # Peach display color
             self.ik_ctrl[branch[2]] = ctrlik
+
         self.build_ik()
 
 
