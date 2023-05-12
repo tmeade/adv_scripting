@@ -626,5 +626,5 @@ def test():
     il.reload(hand)
     hand.test()
     '''
-    hand_lt = Hand('hand', 'lt_wrist_bnd_jnt')
-    hand_rt = Hand('hand', 'rt_wrist_bnd_jnt')
+    hand_lt = Hand('lt_hand', 'lt_wrist_bnd_jnt')
+    hand_rt = Hand('rt_hand', 'rt_wrist_bnd_jnt')
