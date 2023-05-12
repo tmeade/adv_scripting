@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 import importlib as il
+
 il.reload(appendage)
 il.reload(matrix_tools)
 il.reload(rig_name)
@@ -128,9 +129,9 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
             								maya_type='controller')
 
 		self.toe_ik_handle = cmds.ikHandle(  sj=self.ik_foot_skeleton[1][1].output(),
-										 ee=self.ik_foot_skeleton[2][1].output(),
-										 sol='ikRPsolver',
-										 n=str(name_toe_ik_handle))[0]
+										 	 ee=self.ik_foot_skeleton[2][1].output(),
+										 	 sol='ikRPsolver',
+										 	 n=str(name_toe_ik_handle))[0]
 		self.toe_ik_control = cmds.createNode('transform', n=str(name_toe_ik_control))
 
 		# Create ik pivot HIERARCHY
@@ -138,13 +139,18 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		matrix_tools.snap_offset_parent_matrix(self.ball_ik_control, self.ik_foot_skeleton[1][1].output())
 		cmds.parent(self.toe_ik_control, self.ball_ik_control)
 		cmds.parent(self.toe_ik_handle, self.toe_ik_control)
-		cmds.parent(self.ball_ik_handle, self.ball_ik_control)
+		cmds.parent(self.ball_ik_handle, self.toe_ik_control)
+		
 		# TODO: Use self.ik_controls to get the ankleIK handle and parent it here.
+		cmds.parent(self.ik_controls[0], self.toe_ik_control)
+		cmds.parent(self.ball_ik_control, self.controls_grp)
 
+
+		
 	def create_blended_result(self):
 		'''
 		Take the output matricies fromt he ik and fk and combine them using a blendMatrix node.  The
-		result gets outpu tot he output node's joint matrix attribute.
+		result gets output ot he output node's joint matrix attribute.
 		'''
 		logger.debug('create_blended_result')
 
@@ -152,6 +158,22 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		logger.debug('connect_leg_output')
     	# Connect the start matrix on the output node to the skeleton
 		cmds.connectAttr(f'{self.output}.ball_matrix', f'{self.ball_joint}.offsetParentMatrix')
+		matrix_tools.make_identity(self.ball_joint)
 
 	def cleanup_leg(self):
 		logger.debug('cleanup_leg')
+
+'''
+	def connect_inputs(self):
+
+        if self.input_matrix:
+            matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.leg_ctrl)		
+	
+		#cmds.parent(self.fk_foot_skeleton, self.input_grp)
+		#cmds.parent(self.ik_foot_skeleton, self.input_grp)
+'''
+'''
+import adv_scripting.rig.appendages.leg as leg
+il.reload(leg)
+log = leg.Leg('leg', 'lt_upLeg_bnd_jnt_01', 1, 1, 'lt')
+'''

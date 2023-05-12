@@ -80,6 +80,11 @@ class Biped(Rig):
 
     def build_legs(self):
         logger.debug('build_legs')
+        self.leg = appendages.leg.Leg(SETTINGS['Leg']['appendage_name'],
+                                    SETTINGS['Leg']['start_joint'],
+                                    input_matrix=f'{self.global_control}.worldMatrix[0]')
+        cmds.parent(self.leg.appendage_grp, self.rig_grp)
+
 
     def build_hands(self):
         logger.debug('build_hands')
