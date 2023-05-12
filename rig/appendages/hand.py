@@ -378,12 +378,14 @@ class Hand(appendage.Appendage):
         branch_ctrl_sz = 1 # Control shape size
 
         # Build wrist bnd control
-        wrist_ctrl = utils.create_group(self.wrist_bnd, self.controls_grp)
+        name_wrist = rig_name.RigName(self.wrist_bnd).rename(rig_type='ctrl', maya_type='transform').output()
+        wrist_ctrl = utils.create_group(self.wrist_bnd, self.controls_grp, name_wrist)
         self.fk_ctrl[self.wrist_bnd] = wrist_ctrl
 
         # Build hand bnd control
         if self.wrist_bnd != self.hand_bnd:
-            hand_ctrl = utils.create_group(self.hand_bnd, wrist_ctrl)
+            name_hand = rig_name.RigName(self.hand_bnd).rename(rig_type='ctrl', maya_type='transform').output()
+            hand_ctrl = utils.create_group(self.hand_bnd, wrist_ctrl, name_hand)
             utils.display_color(hand_ctrl, 15) # Blue display color
             self.fk_ctrl[self.hand_bnd] = hand_ctrl
         else:
@@ -440,10 +442,11 @@ class Hand(appendage.Appendage):
         if self.thumb_bnd:
             thumb_ik = rig_name.RigName(self.thumb_bnd).rename(control_type='ik').output()
         for branch in self.skeleton_ik:
+            name_ik = rig_name.RigName(branch[2]).rename(control_type='ik', rig_type='ctrl').remove(position=True).output()
             if branch[0] == thumb_ik:
-                ctrlik = utils.create_control(branch[2], wrist_ctrl, size=branch_ctrl_sz)
+                ctrlik = utils.create_control(branch[2], wrist_ctrl, branch_ctrl_sz, name_ik)
             else:
-                ctrlik = utils.create_control(branch[2], ik_ctrl_grp, size=branch_ctrl_sz)
+                ctrlik = utils.create_control(branch[2], ik_ctrl_grp, branch_ctrl_sz, name_ik)
             utils.display_color(ctrlik, 10) # Peach display color
             self.ik_ctrl[branch[2]] = ctrlik
 
@@ -550,6 +553,11 @@ class Hand(appendage.Appendage):
         cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{self.pv_ctrl_grp}.visibility')
         cmds.connectAttr(f'{reverse}.outputX', f'{self.fk_jnt_grp}.visibility')
         cmds.connectAttr(f'{reverse}.outputX', f'{self.fk_ctrl_grp}.visibility')
+        if self.thumb_bnd: # Thumb is separate from hand jnt
+            thumb_fk = rig_name.RigName(self.thumb_bnd).rename(control_type='fk', rig_type='ctrl').output()
+            thumb_ik = rig_name.RigName(self.thumb_bnd).rename(control_type='ik', rig_type='ctrl').remove(position=True).output()
+            cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{thumb_ik}.visibility')
+            cmds.connectAttr(f'{reverse}.outputX', f'{thumb_fk}.visibility')
 
         # Connect FK
         for branch in self.skeleton_fk:
@@ -574,9 +582,14 @@ class Hand(appendage.Appendage):
             mat_blend0, mat_blend1, mat_blend2 = branch_mat
             attr_blend0, attr_blend1, attr_blend2 = branch_attr
             bnd0, bnd1, bnd2 = branch_bnd
-            # hand jnt is parent of all branches. Connect multMatrix output to Hand output.
-            cmds.connectAttr(f'{self.hand_bnd}.worldInverseMatrix[0]', f'{mat_blend0}.matrixIn[1]')
-            cmds.connectAttr(f'{self.output}.{attr_blend0}', f'{bnd0}.offsetParentMatrix')
+            if bnd0 == self.thumb_bnd: # Thumb is separate from hand jnt
+                # hand jnt is parent of all branches. Connect multMatrix output to Hand output.
+                cmds.connectAttr(f'{self.wrist_bnd}.worldInverseMatrix[0]', f'{mat_blend0}.matrixIn[1]')
+                cmds.connectAttr(f'{self.output}.{attr_blend0}', f'{bnd0}.offsetParentMatrix')
+            else:
+                # hand jnt is parent of all branches. Connect multMatrix output to Hand output.
+                cmds.connectAttr(f'{self.hand_bnd}.worldInverseMatrix[0]', f'{mat_blend0}.matrixIn[1]')
+                cmds.connectAttr(f'{self.output}.{attr_blend0}', f'{bnd0}.offsetParentMatrix')
             utils.make_identity(bnd0)
             # ik0 is parent of ik1. Connect multMatrix output to Hand output.
             cmds.connectAttr(f'{bnd0}.worldInverseMatrix[0]', f'{mat_blend1}.matrixIn[1]')
@@ -613,12 +626,5 @@ def test():
     il.reload(hand)
     hand.test()
     '''
-    lhand1 = Hand('hand', 'lt_wrist_bnd_jnt')
-    #lhand1 = Hand('hand', 'lt_wrist_bnd_jnt', num_upperTwist_joint=1, num_lowerTwist_joint=1)
-    #lhand2 = Hand('hand', 'lt_wrist_bnd_jnt', num_upperTwist_joint=1, num_lowerTwist_joint=None)
-    #lhand3 = Hand('hand', 'lt_wrist_bnd_jnt', num_upperTwist_joint=None, num_lowerTwist_joint=1)
-    #lhand4 = Hand('hand', 'lt_wrist_bnd_jnt', num_upperTwist_joint=None, num_lowerTwist_joint=None)
-    #rhand1 = Hand('hand', 'rt_wrist_bnd_jnt')
-
-    #TODO
-    # test scenario where thumb is on separate branch than rest of fingers
+    hand_lt = Hand('lt_hand', 'lt_wrist_bnd_jnt')
+    hand_rt = Hand('rt_hand', 'rt_wrist_bnd_jnt')
