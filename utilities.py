@@ -288,11 +288,13 @@ def create_control(node, parent=None, size=1, name=None):
 
     Returns name of created control.
     '''
+    #logger.debug(f"node:'{node}', parent:'{parent}', size:'{size}', name:'{name}'")
     if name:
         ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=name)[0]
     else:
         ctrl_rn = rig_name.RigName(node).rename(rig_type='ctrl')
         ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
+    logger.debug(ctrl)
     if parent:
         cmds.parent(ctrl, parent, a=True)
         # modify ctrl's transform to match parent
