@@ -67,6 +67,7 @@ class Arm(two_bone_fkik.TwoBoneFKIK):
         cmds.parent(self.clavicle_control, self.controls_grp)
         cmds.parent(self.fk_controls[0], self.clavicle_control)
         matrix_tools.matrix_parent_constraint(self.clavicle_control, self.fk_controls[0])
+        matrix_tools.matrix_parent_constraint(self.clavicle_control, self.ik_skeleton[0][0])
 
 
 '''
