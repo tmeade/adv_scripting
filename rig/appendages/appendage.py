@@ -23,6 +23,16 @@ class Appendage(ABC):
         self.start_joint = start_joint
         self.input_matrix = input_matrix
         self.controls = {'fk': {}, 'ik': {}, 'switches': {}}
+        '''
+        Example:
+        {
+        'fk': {'lt_up_arm': 'lt_uparm_ctrl_tranform',
+                'lt_elbow': lt_elbow_ctrl_transform},
+        'ik': {'lt_wrist': 'lt_wrist_ctrl_transform',
+                lt_arm_pv': 'lt_arm_pv_ctrl_transform'},
+        'switches': {'lt_arm_space_switch': 'lt_arm_space_switch_grp'}
+        }
+        '''
         self.skeleton = cmds.listRelatives(self.start_joint, ad=True)
 
 
@@ -103,5 +113,8 @@ class Appendage(ABC):
 
     def finish(self):
         cmds.parent(self.controls_grp, self.appendage_grp)
+        self.controls_grp = cmds.listRelatives(self.appendage_grp, f=True)[-1]
         cmds.parent(self.input, self.appendage_grp)
         cmds.parent(self.output, self.appendage_grp)
+        self.output = cmds.listRelatives(self.appendage_grp, f=True)[-1]
+        print('OUTPUT****: ', self.output)

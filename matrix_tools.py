@@ -17,7 +17,7 @@ def snap_offset_parent_matrix(source, target):
     '''
     # Set the source's offestParentMatrix to target's world space matrix to acount
     # for source's parent offset.
-    parent = mc.listRelatives(source, parent=True)
+    parent = mc.listRelatives(source, parent=True, f=True)
     if parent:
         # TODO: This is a useful funciton on it's own.  Create a new function to return the offset
         offset_matrix = (om.MMatrix(mc.xform(target, q=True, m=True, ws=True)) *
@@ -65,7 +65,7 @@ def matrix_parent_constraint(driver, driven, connect_output=None):
     mc.setAttr(f'{mult_matrix_node}.matrixIn[0]', offset_matrix, type='matrix')
     mc.connectAttr(driver_plug, f'{mult_matrix_node}.matrixIn[1]')
 
-    driven_parent = mc.listRelatives(driven, parent=True)
+    driven_parent = mc.listRelatives(driven, parent=True, f=True)
     if driven_parent:
         mc.connectAttr(f'{driven_parent[0]}.worldInverseMatrix[0]',
                        f'{mult_matrix_node}.matrixIn[2]')

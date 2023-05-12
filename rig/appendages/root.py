@@ -41,4 +41,4 @@ class Root(appendage.Appendage):
     def cleanup(self):
         # Parent the controls to the control group.
         cmds.parent(self.root_ctrl, self.controls_grp)
-        self.controls['fk']['root_ctrl'] = self.root_ctrl
+        self.controls['fk']['root'] = self.root_ctrl

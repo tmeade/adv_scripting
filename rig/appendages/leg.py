@@ -62,6 +62,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 			logging.error(f'{self.ball_joint} joint has no children.')
 			return
 
+		print ('OUT_LEG: ', self.output)
 		cmds.addAttr(self.output, longName='ball_matrix', attributeType='matrix')
 
 		# WARNING: Begin hack.  Running the code without creating the skeleton and deleting it
@@ -140,13 +141,13 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		cmds.parent(self.toe_ik_control, self.ball_ik_control)
 		cmds.parent(self.toe_ik_handle, self.toe_ik_control)
 		cmds.parent(self.ball_ik_handle, self.toe_ik_control)
-		
+
 		# TODO: Use self.ik_controls to get the ankleIK handle and parent it here.
 		cmds.parent(self.ik_controls[0], self.toe_ik_control)
 		cmds.parent(self.ball_ik_control, self.controls_grp)
 
 
-		
+
 	def create_blended_result(self):
 		'''
 		Take the output matricies fromt he ik and fk and combine them using a blendMatrix node.  The
@@ -167,8 +168,8 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 	def connect_inputs(self):
 
         if self.input_matrix:
-            matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.leg_ctrl)		
-	
+            matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.leg_ctrl)
+
 		#cmds.parent(self.fk_foot_skeleton, self.input_grp)
 		#cmds.parent(self.ik_foot_skeleton, self.input_grp)
 '''

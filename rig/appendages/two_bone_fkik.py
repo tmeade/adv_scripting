@@ -73,6 +73,7 @@ class TwoBoneFKIK(appendage.Appendage):
                                                                 self.num_lowerTwist_joints)
 
         # Add a matrix attribute to represent each bnd joint on the output node
+        print ('OUT_TWOBONE: ', self.output)
         for joint_name in self.bnd_joints.keys():
             cmds.addAttr(self.output, longName=f'{joint_name}_matrix', attributeType='matrix')
 

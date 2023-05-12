@@ -16,7 +16,7 @@ logger = logging.getLogger()
 VALID_SIDE_TYPES = ['lt', 'rt', 'ctr']
 VALID_REGION_TYPES = ['front', 'rear', 'middle', 'upper', 'lower', 'start', 'end']
 VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver', 'switch']
-VALID_RIG_TYPES = ['ctrl', 'offset', 'sdk', 'handle', 'pv', 'loc', 'jnt', 'geo', 'constraint', 'grp', 'util']
+VALID_RIG_TYPES = ['ctrl', 'offset', 'sdk', 'handle', 'pv', 'loc', 'jnt', 'geo', 'constraint', 'grp', 'util', 'appendage']
 VALID_MAYA_TYPES = [x.lower() for x in mc.ls(nodeTypes=True)]
 
 # Parse name possibilities
@@ -54,7 +54,8 @@ PARSE_RIG_TYPES = {
     'geo': ['geo', 'geometry'],
     'constraint': ['constraint', 'constr', 'cn', 'con', 'cst', 'cnsr'],
     'grp': ['grp', 'gr', 'gro', 'group'],
-    'util': ['util', 'utl', 'uti', 'utility']
+    'util': ['util', 'utl', 'uti', 'utility'],
+    'appendage': ['appendage']
 }
 NUM_TYPES = 7
 
