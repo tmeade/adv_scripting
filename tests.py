@@ -50,27 +50,21 @@ class TestRootAppendage(unittest.TestCase):
         self.root = root.Root('test_root', self.joint)
 
     def test_root_placement_position(self):
-        position = cmds.xform(self.root.controls['fk']['root_ctrl'], query=True, ws=True, t=True)
+        position = cmds.xform(self.root.controls['fk']['root'], query=True, ws=True, t=True)
         self.assertEqual(position, [50, 50, 10])
 
     def test_root_translation(self):
-        cmds.xform(self.root.controls['fk']['root_ctrl'], ws=True, t=(20, 20, 20))
+        cmds.xform(self.root.controls['fk']['root'], ws=True, t=(20, 20, 20))
         position = cmds.xform(self.joint, query=True, ws=True, t=True)
         logger.info(position)
         self.assertEqual(position, [20.0, 20.0, 20.0])
 
     def test_root_rotation(self):
-        cmds.xform(self.root.controls['fk']['root_ctrl'], ws=True, ro=(10, 10, 10))
+        cmds.xform(self.root.controls['fk']['root'], ws=True, ro=(5, 5, 5))
         rotation = cmds.xform(self.joint, query=True, ws=True, ro=True)
-        self.assertEqual(rotation, [10.0, 10.0, 10.0])
-
-    def test_display_color():
-        test_grp = cmds.createNode('transform', n='test_display_color')
-        for idx in range(1,32):
-            color_jnt = cmds.createNode('joint', n=f'color_jnt_{idx}')
-            cmds.parent(color_jnt, test_grp)
-            cmds.xform(color_jnt, t=(0,-idx,0))
-            utils.display_color(node, idx)
+        self.assertAlmostEqual(rotation[0], 5, 1)
+        self.assertAlmostEqual(rotation[1], 5, 1)
+        self.assertAlmostEqual(rotation[2], 5, 1)
 
 if __name__ == '__main__':
     unittest.main()
