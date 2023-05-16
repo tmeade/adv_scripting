@@ -21,8 +21,7 @@ class Spine(rap.Appendage):
     def setup(self):
 
         # Get the selected joint
-        selected_joint = self.start_joint
-        child_joint = cmds.listRelatives(selected_joint, ad=True, type="joint")
+        child_joint = cmds.listRelatives(self.start_joint.output(), ad=True, type="joint")
 
         dv_prefix = 'driver_'
         fk_prefix = 'fk_contorl_'
@@ -32,13 +31,13 @@ class Spine(rap.Appendage):
 
 
         # Copy and rename the joint hierarchy
-        dv_root_joint = utils.copy_rename_joint_hierarchy(selected_joint, dv_prefix)
+        dv_root_joint = utils.copy_rename_joint_hierarchy(self.start_joint.output(), dv_prefix)
 
 
         # make list for ik, fk joints children
         dvchild_list = cmds.listRelatives(dv_root_joint, ad=True, type="joint")
 
-        children = cmds.listRelatives(selected_joint, c=True, type="joint")
+        children = cmds.listRelatives(self.start_joint.output(), c=True, type="joint")
 
         utils.delete_useless_joint(dv_root_joint, 'spine')
         """

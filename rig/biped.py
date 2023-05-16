@@ -25,16 +25,17 @@ SETTINGS = {'Root': {
                 'start_joint': rig_name.RigName(full_name='root_bnd_jnt')},
             'Spine': {
                 'appendage_name': 'spine',
-                'start_joint': 'spine_bnd_jnt_01'},
+                'start_joint': rig_name.RigName('spine_bnd_jnt_01')},
             'Head': {
                 'appendage_name': 'head',
                 'start_joint': 'neck_bnd_jnt',
                 'num_neck_joints': 0},
-            'Leg': {'appendage_name': rig_name.RigName(full_name='lt_leg_appendage'),
-                    'start_joint': rig_name.RigName(full_name='lt_upLeg_bnd_jnt_01'),
-                    'num_upperTwist_joint': 1,
-                    'num_lowerTwist_joint': 1,
-                    'side': rig_name.Side('lt')},
+            'Leg': {
+                'appendage_name': rig_name.RigName(full_name='lt_leg_appendage'),
+                'start_joint': rig_name.RigName(full_name='lt_upLeg_bnd_jnt_01'),
+                'num_upperTwist_joint': 1,
+                'num_lowerTwist_joint': 1,
+                'side': rig_name.Side('lt')},
             'Hand_Left': {
                 'appendage_name': 'hand',
                 'start_joint': 'lt_wrist_bnd_jnt',
@@ -104,14 +105,14 @@ class Biped(Rig):
         logger.debug('build_root')
         self.spine = spine.Spine(self.settings['Spine']['appendage_name'],
                                 self.settings['Spine']['start_joint'],
-                                input_matrix= self.root.controls['fk']['root'] + ".worldMatrix[0]")
+                                input_matrix= f"{self.root.controls['fk']['root']}.worldMatrix[0]")
 
     def build_head(self):
         logger.debug('build_head')
-        self.head = appendages.head.Head(SETTINGS['Head']['appendage_name'],
+        self.head = head.Head(SETTINGS['Head']['appendage_name'],
                                     SETTINGS['Head']['start_joint'],
                                     SETTINGS['Head']['num_neck_joints'],
-                                    input_matrix=f'{self.global_control}.worldMatrix[0]')
+                                    input_matrix='driver_spine_bnd_jnt_05_fk_ctrl_transform.worldMatrix[0]')
         cmds.parent(self.head.appendage_grp, self.rig_grp)
 
     def build_arms(self):
