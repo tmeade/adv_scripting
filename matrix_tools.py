@@ -2,6 +2,7 @@ import logging
 import maya.api.OpenMaya as om
 import maya.cmds as mc
 import adv_scripting.rig_name as rn
+import rig_name
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,8 @@ def matrix_parent_constraint(driver, driven, connect_output=None):
     #       in[0]: offset matrix from driver.
     #       in[1]: The world matrix of the driver.
     #       in[2]: The worldInverseMatrix of the driven objects parent.
-    mult_matrix_node = mc.createNode('multMatrix')
+    name_mult = rig_name.RigName(driven).remove(rig_type=1, maya_type=1).output()
+    mult_matrix_node = mc.createNode('multMatrix', n=f'{name_mult}_parentConstraint_multMatrix')
     mc.setAttr(f'{mult_matrix_node}.matrixIn[0]', offset_matrix, type='matrix')
     mc.connectAttr(driver_plug, f'{mult_matrix_node}.matrixIn[1]')
 
@@ -89,5 +91,4 @@ def make_identity(transform):
     '''
     identity_mtx = om.MMatrix()
     mc.xform(transform, m=identity_mtx.setToIdentity(), os=True)
-
-    logger.info(f'Set identity on {transform}')
+    #logger.info(f'Set identity on {transform}')

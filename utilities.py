@@ -392,22 +392,6 @@ def create_group(node, parent=None, name=None):
     return grp
 
 
-# MAKE IDENTITY ========================================================
-
-def make_identity(node):
-    '''
-    Make identity on current node. Ignore locked attributes.
-    Reset transforms including translate, rotate, scale, and joint orient.
-    '''
-    for attribute in ["translate", "rotate", "scale", "jointOrient"]:
-        value = 1 if attribute == "scale" else 0
-        for axis in "XYZ":
-            if cmds.attributeQuery(attribute + axis, node=node, exists=True):
-                attribute_name = "{}.{}{}".format(node, attribute, axis)
-                if not cmds.getAttr(attribute_name, lock=True):
-                    cmds.setAttr(attribute_name, value)
-
-
 # BLEND SKELETON =======================================================
 
 def blend_skeleton(fk_joint, ik_joint, blend_switch, blend_attribute):
@@ -578,6 +562,106 @@ def display_color(node, color_index):
     '''
     # Color rgb values
     cmds.color(node, rgb=cmds.colorIndex(color_index, q=True))
+
+
+# READ JOINT TRANSFORMS ================================================
+# (Used in tests.py)
+
+def read_joint_transforms(joint, end_joint=None):
+    '''
+    Read all joints in hierarchy from joint to end_joint.
+
+    Arguments
+    joint (str): joint name
+    end_joint (str): end joint name
+
+    Returns
+    joint_transforms (dict): mapping of transforms including position,
+        translate, rotate, scale, and jointOrient for each joint, e.g.
+        {'position': {jnt:(5,5,5)},
+         'translate': {jnt:(0,0,0)},
+         'rotate': {jnt:(0,0,0)},
+         'scale': {jnt:(1,1,1)},
+         'jointOrient': {jnt:(0,0,0)}
+        }
+    '''
+    joint_transforms = dict()
+    joint_transforms['position'][joint] = read_position(joint)
+    joint_transforms['translate'][joint] = read_translate(joint)
+    joint_transforms['rotate'][joint] = read_rotate(joint)
+    joint_transforms['scale'][joint] = read_scale(joint)
+    joint_transforms['jointOrient'][joint] = read_joint_orient(joint)
+
+    if joint != end_joint:
+        children = cmds.listRelatives(joint) or []
+        for child in children:
+            child_transforms = read_joint_transforms(child, end_joint)
+            joint_transforms.update(child_transforms)
+    return joint_transforms
+
+def read_position(node):
+    return cmds.xform(node, q=1, t=1, ws=1) # world space
+
+def read_translate(node):
+    return cmds.xform(node, q=1, t=1, os=1) # object space
+
+def read_rotate(node):
+    return cmds.xform(node, q=1, ro=1, os=1) # object space
+
+def read_scale(node):
+    return cmds.xform(node, q=1, s=1, os=1) # object space
+
+def read_joint_orient(node):
+    if not cmds.objectType(node, isType='joint'):
+        logger.error("{node} is not 'joint' type. Unable to read jointOrient")
+    return cmds.joint(node, q=1, o=1)
+
+
+# RESET TRANSFORMS =====================================================
+
+def make_identity(node):
+    '''
+    Make identity on current node. Ignore locked attributes.
+    Reset transforms including translate, rotate, scale, and joint orient.
+    '''
+    for attribute in ['translate', 'rotate', 'scale', 'jointOrient']:
+        value = 1 if attribute == 'scale' else 0
+        for axis in 'XYZ':
+            if cmds.attributeQuery(attribute + axis, node=node, exists=True):
+                attribute_name = '{}.{}{}'.format(node, attribute, axis)
+                if not cmds.getAttr(attribute_name, lock=True):
+                    cmds.setAttr(attribute_name, value)
+
+def reset_translate(node):
+    for axis in 'XYZ':
+        if cmds.attributeQuery(f'translate{axis}', node=node, exists=True):
+            attribute_name = f'{node}.translate{axis}'
+            if not cmds.getAttr(attribute_name, lock=True):
+                cmds.setAttr(attribute_name, 0)
+
+def reset_rotate(node):
+    for axis in 'XYZ':
+        if cmds.attributeQuery(f'rotate{axis}', node=node, exists=True):
+            attribute_name = f'{node}.rotate{axis}'
+            if not cmds.getAttr(attribute_name, lock=True):
+                cmds.setAttr(attribute_name, 0)
+
+def reset_scale(node):
+    for axis in 'XYZ':
+        if cmds.attributeQuery(f'scale{axis}', node=node, exists=True):
+            attribute_name = f'{node}.scale{axis}'
+            if not cmds.getAttr(attribute_name, lock=True):
+                cmds.setAttr(attribute_name, 1)
+
+def reset_joint_orient(node):
+    if not cmds.objectType(node, isType='joint'):
+        logger.error("{node} is not 'joint' type. Unable to reset jointOrient")
+    for axis in 'XYZ':
+        if cmds.attributeQuery(f'jointOrient{axis}', node=node, exists=True):
+            attribute_name = f'{node}.jointOrient{axis}'
+            if not cmds.getAttr(attribute_name, lock=True):
+                cmds.setAttr(attribute_name, 0)
+
 
 # GIRYANG'S JOINT UTILITIES ============================================
 

@@ -8,46 +8,33 @@ import adv_scripting.rig.appendages.leg as leg
 import adv_scripting.rig.appendages.arm as arm
 import adv_scripting.rig.appendages.hand as hand
 import adv_scripting.utilities as utils
-
-
-
-
-
-logger = logging.getLogger(__name__)
-
 import importlib as il
 il.reload(root)
 il.reload(spine)
 il.reload(leg)
+
+logger = logging.getLogger(__name__)
 
 SETTINGS = {'Root': {
                 'appendage_name': 'root',
                 'start_joint': rig_name.RigName(full_name='root_bnd_jnt')},
             'Spine': {
                 'appendage_name': 'spine',
-                'start_joint': rig_name.RigName('spine_bnd_jnt_01')},
+                'start_joint': rig_name.RigName(full_name='spine_bnd_jnt_01')},
             'Head': {
                 'appendage_name': 'head',
-                'start_joint': 'neck_bnd_jnt',
+                'start_joint': rig_name.RigName(full_name='neck_bnd_jnt'),
                 'num_neck_joints': 0},
-            'Leg': {
-                'appendage_name': rig_name.RigName(full_name='lt_leg_appendage'),
+            'Leg': {'appendage_name': rig_name.RigName(full_name='lt_leg_appendage'),
                 'start_joint': rig_name.RigName(full_name='lt_upLeg_bnd_jnt_01'),
                 'num_upperTwist_joint': 1,
-                'num_lowerTwist_joint': 1,
-                'side': rig_name.Side('lt')},
-            'Hand_Left': {
-                'appendage_name': 'hand',
-                'start_joint': 'lt_wrist_bnd_jnt',
+                'num_lowerTwist_joint': 1},
+            'Hand': {
+                'appendage_name': rig_name.Element('hand'),
+                'start_joint': rig_name.RigName(full_name='lt_wrist_bnd_jnt'),
                 'num_upperTwist_joint': None,
                 'num_lowerTwist_joint': None,
-                'input_matrix': 'lt_lower_arm_bnd_jnt_02.worldMatrix[0]' },
-            'Hand_Right': {
-                'appendage_name': 'hand',
-                'start_joint': 'rt_wrist_bnd_jnt',
-                'num_upperTwist_joint': None,
-                'num_lowerTwist_joint': None,
-                'input_matrix': 'rt_lower_arm_bnd_jnt_02.worldMatrix[0]' }
+                'input_matrix': rig_name.RigName(full_name='lt_lower_arm_bnd_jnt_02')}
             }
 
 
@@ -96,28 +83,27 @@ class Biped(Rig):
     def build_root(self):
         logger.debug('build_root')
         self.root = root.Root(self.settings['Root']['appendage_name'],
-                                    self.settings['Root']['start_joint'].output(),
-                                    input_matrix=f'{self.global_control}.worldMatrix[0]')
+                              self.settings['Root']['start_joint'].output(),
+                              input_matrix=f'{self.global_control}.worldMatrix[0]')
         cmds.parent(self.root.appendage_grp, self.rig_grp)
         utils.rename_hierarchy(self.settings['Root']['start_joint'].output(), end_joint=None, unlock=True)
 
     def build_spine(self):
         logger.debug('build_root')
         self.spine = spine.Spine(self.settings['Spine']['appendage_name'],
-                                self.settings['Spine']['start_joint'],
-                                input_matrix= f"{self.root.controls['fk']['root']}.worldMatrix[0]")
+                                 self.settings['Spine']['start_joint'].output(),
+                                 input_matrix= self.root.controls['fk']['root'] + ".worldMatrix[0]")
 
     def build_head(self):
         logger.debug('build_head')
-        self.head = head.Head(SETTINGS['Head']['appendage_name'],
-                                    SETTINGS['Head']['start_joint'],
-                                    SETTINGS['Head']['num_neck_joints'],
-                                    input_matrix='driver_spine_bnd_jnt_05_fk_ctrl_transform.worldMatrix[0]')
+        self.head = appendages.head.Head(self.settings['Head']['appendage_name'],
+                                         self.settings['Head']['start_joint'].output(),
+                                         self.settings['Head']['num_neck_joints'],
+                                         input_matrix=f'{self.global_control}.worldMatrix[0]')
         cmds.parent(self.head.appendage_grp, self.rig_grp)
 
     def build_arms(self):
         logger.debug('build_arms')
-
 
     def build_legs(self):
         logger.debug('build_legs')
@@ -131,22 +117,13 @@ class Biped(Rig):
                                     input_matrix = f"{self.root.controls}['fk']['root'].worldMatrix[0]")
             cmds.parent(self.legs[side].appendage_grp, self.rig_grp)
 
-
-
     def build_hands(self):
         logger.debug('build_hand')
-        # self.hands = dict()
-        # for side in self.sides:
-        #     self.hands[side] = appendages.hand.Hand()
-        self.hand_lt = hand.Hand(SETTINGS['Hand_Left']['appendage_name'],
-                                            SETTINGS['Hand_Left']['start_joint'],
-                                            SETTINGS['Hand_Left']['num_upperTwist_joint'],
-                                            SETTINGS['Hand_Left']['num_lowerTwist_joint'],
-                                            SETTINGS['Hand_Left']['input_matrix'])
-        self.hand_rt = hand.Hand(SETTINGS['Hand_Right']['appendage_name'],
-                                            SETTINGS['Hand_Right']['start_joint'],
-                                            SETTINGS['Hand_Right']['num_upperTwist_joint'],
-                                            SETTINGS['Hand_Right']['num_lowerTwist_joint'],
-                                            SETTINGS['Hand_Right']['input_matrix'])
-        cmds.parent(self.hand_lt.appendage_grp, self.rig_grp)
-        cmds.parent(self.hand_rt.appendage_grp, self.rig_grp)
+        self.hands = dict()
+        for side in self.sides:
+            self.hands[side] = hand.Hand(self.settings['Hand']['appendage_name'],
+                                        self.settings['Hand']['start_joint'].rename(side=side).output(),
+                                        self.settings['Hand']['num_upperTwist_joint'],
+                                        self.settings['Hand']['num_lowerTwist_joint'],
+                                        self.settings['Hand']['input_matrix'].rename(side=side).output() + '.worldMatrix[0]')
+            cmds.parent(self.hands[side].appendage_grp, self.rig_grp)

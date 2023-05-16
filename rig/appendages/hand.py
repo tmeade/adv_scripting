@@ -115,6 +115,10 @@ class Hand(appendage.Appendage):
             Measure offsets
             Create additional input matrix attributes
         '''
+        # Rename appendage group with side
+        name_appendage_grp = rig_name.RigName(side=self.side, element=self.appendage_name, rig_type='grp').output()
+        self.appendage_grp = cmds.rename(self.appendage_grp, name_appendage_grp)
+
         # Read current hand skeleton starting from wrist joint
         skeleton_hand = self.read_skeleton(self.wrist_bnd)
         if not skeleton_hand:
@@ -129,7 +133,7 @@ class Hand(appendage.Appendage):
         for child in children:
             self.orient_joint(child)
 
-        # self.bnd_jnt is a 2D list of all control bind joints
+        # self.bnd_jnt is a 2D list of all branch bind joints
         # Contains each branch's start, middle, end joints. Discard any twist/bendy joints.
         # e.g.
         #      [['lt_thumb_bnd_jnt_01', 'lt_thumb_bnd_jnt_02', 'lt_thumb_bnd_jnt_03'],
@@ -442,7 +446,7 @@ class Hand(appendage.Appendage):
         if self.thumb_bnd:
             thumb_ik = rig_name.RigName(self.thumb_bnd).rename(control_type='ik').output()
         for branch in self.skeleton_ik:
-            name_ik = rig_name.RigName(branch[2]).rename(control_type='ik', rig_type='ctrl').remove(position=True).output()
+            name_ik = rig_name.RigName(branch[2]).rename(control_type='ik', rig_type='ctrl').remove(position=1).output()
             if branch[0] == thumb_ik:
                 ctrlik = utils.create_control(branch[2], wrist_ctrl, branch_ctrl_sz, name_ik)
             else:
@@ -474,9 +478,8 @@ class Hand(appendage.Appendage):
 
         # Blended output node, allowing for FK/IK switch
         name_blend = rig_name.RigName(side=self.side, element=f'{self.appendage_name}_FKIK',
-            control_type='switch', rig_type='grp')
-        self.blend_switch = name_blend.output()
-        cmds.createNode('transform', n=self.blend_switch)
+            control_type='switch', rig_type='grp').output()
+        self.blend_switch = utils.create_group(self.wrist_bnd, name=name_blend)
         cmds.addAttr(self.blend_switch, ln='switch_fkik', nn=f'Switch FKIK', at='double', min=0, max=1, k=1)
 
         # Build IK
@@ -495,7 +498,6 @@ class Hand(appendage.Appendage):
             name_pv = rig_name.RigName(ik_ctrl).rename(rig_type='pv', maya_type='controller')
             pv_ctrl = utils.create_control_pv(pv_pos, name_pv.output(), ik_handle, self.pv_ctrl_grp, pv_ctrl_sz)
             self.pv_ctrl[ik_ctrl] = pv_ctrl
-            #cmds.parent(pv_ctrl, self.pv_ctrl_grp, a=True)
 
             # Name each blend node based on name of FK joint
             name_blend0 = rig_name.RigName(fk0).remove(control_type=1, rig_type=1, maya_type=1).output()
@@ -555,7 +557,7 @@ class Hand(appendage.Appendage):
         cmds.connectAttr(f'{reverse}.outputX', f'{self.fk_ctrl_grp}.visibility')
         if self.thumb_bnd: # Thumb is separate from hand jnt
             thumb_fk = rig_name.RigName(self.thumb_bnd).rename(control_type='fk', rig_type='ctrl').output()
-            thumb_ik = rig_name.RigName(self.thumb_bnd).rename(control_type='ik', rig_type='ctrl').remove(position=True).output()
+            thumb_ik = rig_name.RigName(self.thumb_bnd).rename(control_type='ik', rig_type='ctrl').remove(position=1).output()
             cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{thumb_ik}.visibility')
             cmds.connectAttr(f'{reverse}.outputX', f'{thumb_fk}.visibility')
 
@@ -607,6 +609,23 @@ class Hand(appendage.Appendage):
         Appendage class groups everything under Hand grp
         under method finish()
         '''
+        # Organize and label controls
+        for jnt, ctrl in self.fk_ctrl.items():
+            label_fk = rig_name.RigName(jnt).remove(side=1, rig_type=1, maya_type=1).output()
+            self.controls['fk'][label_fk] = ctrl
+        for jnt, ctrl in self.ik_ctrl.items():
+            label_ik = rig_name.RigName(jnt).remove(side=1, rig_type=1, maya_type=1, position=1).output()
+            self.controls['ik'][label_ik] = ctrl
+        for ctrl, pv_ctrl in self.pv_ctrl.items():
+            label_pv = rig_name.RigName(pv_ctrl).remove(side=1, control_type=1, maya_type=1).output()
+            self.controls['ik'][label_pv] = pv_ctrl
+        name_switch = rig_name.RigName(self.blend_switch).remove(side=1, rig_type=1, maya_type=1).output()
+        self.controls['switches'][name_switch] = self.blend_switch
+
+        logger.debug(f"Controls FK:\n {self.controls['fk']}:")
+        logger.debug(f"Controls IK:\n {self.controls['ik']}:")
+        logger.debug(f"Controls Switches:\n {self.controls['switches']}:")
+
         # Group skeletons under appendage grp
         cmds.parent(self.fk_jnt_grp, self.appendage_grp)
         cmds.parent(self.ik_jnt_grp, self.appendage_grp)
@@ -626,5 +645,5 @@ def test():
     il.reload(hand)
     hand.test()
     '''
-    hand_lt = Hand('lt_hand', 'lt_wrist_bnd_jnt')
-    hand_rt = Hand('rt_hand', 'rt_wrist_bnd_jnt')
+    hand_lt = Hand('hand', 'lt_wrist_bnd_jnt')
+    hand_rt = Hand('hand', 'rt_wrist_bnd_jnt')
