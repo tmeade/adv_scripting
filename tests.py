@@ -40,9 +40,11 @@ class TestUtilities(unittest.TestCase):
 
     def test_create_fk_control_type(self):
         self.assertTrue(cmds.nodeType(self.control), 'transform')
+        logger.info('Passed test create_fk_control_type')
 
     def test_create_fk_control_position(self):
         self.assertEqual(self.position, [5, 5, 10])
+        logger.info('Passed test create_fk_control_position')
 
 class TestRootAppendage(unittest.TestCase):
     def setUp(self):
@@ -52,12 +54,14 @@ class TestRootAppendage(unittest.TestCase):
     def test_root_placement_position(self):
         position = cmds.xform(self.root.controls['fk']['root'], query=True, ws=True, t=True)
         self.assertEqual(position, [50, 50, 10])
+        logger.info('Passed test root_placement_position')
 
     def test_root_translation(self):
         cmds.xform(self.root.controls['fk']['root'], ws=True, t=(20, 20, 20))
         position = cmds.xform(self.joint, query=True, ws=True, t=True)
         logger.info(position)
         self.assertEqual(position, [20.0, 20.0, 20.0])
+        logger.info('Passed test root_translation')
 
     def test_root_rotation(self):
         cmds.xform(self.root.controls['fk']['root'], ws=True, ro=(5, 5, 5))
@@ -65,6 +69,7 @@ class TestRootAppendage(unittest.TestCase):
         self.assertAlmostEqual(rotation[0], 5, 1)
         self.assertAlmostEqual(rotation[1], 5, 1)
         self.assertAlmostEqual(rotation[2], 5, 1)
+        logger.info('Passed test test_root_rotation')
 
 class TestHandAppendage(unittest.TestCase):
     def __init__(self):
