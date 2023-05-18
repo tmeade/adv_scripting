@@ -12,6 +12,7 @@ import importlib as il
 il.reload(root)
 il.reload(spine)
 il.reload(leg)
+il.reload(arm)
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,12 @@ SETTINGS = {'Root': {
                 'start_joint': rig_name.RigName(full_name='lt_wrist_bnd_jnt'),
                 'num_upperTwist_joint': None,
                 'num_lowerTwist_joint': None,
-                'input_matrix': rig_name.RigName(full_name='lt_lower_arm_bnd_jnt_02')}
+                'input_matrix': rig_name.RigName(full_name='lt_lower_arm_bnd_jnt_02')},
+            'Arm': {
+                'appendage_name': rig_name.RigName(full_name='lt_arm_appendage'),
+                'start_joint': rig_name.RigName(full_name='lt_upArm_bnd_jnt_01'),
+                'num_upperTwist_joint': 1,
+                'num_lowerTwist_joint': 1},
             }
 
 
@@ -104,6 +110,14 @@ class Biped(Rig):
 
     def build_arms(self):
         logger.debug('build_arms')
+        self.arms  = dict()
+        for side in self.sides:
+            self.arms[side] = arm.Arm(self.settings['Arm']['appendage_name'].rename(side=side).output(),
+                                    self.settings['Arm']['start_joint'].rename(side=side).output(),
+                                    self.settings['Arm']['num_upperTwist_joint'],
+                                    self.settings['Arm']['num_lowerTwist_joint'],
+                                    side)
+            cmds.parent(self.arms[side].appendage_grp, self.rig_grp)
 
     def build_legs(self):
         logger.debug('build_legs')
