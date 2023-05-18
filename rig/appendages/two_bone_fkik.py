@@ -30,11 +30,12 @@ class TwoBoneFKIK(appendage.Appendage):
                  num_upperTwist_joint,
                  num_lowerTwist_joint,
                  side,
-                 element,
+                 rotate_axis = 'rz',
                  control_to_local_orient=False,
                  input_matrix=None):
         self.num_upperTwist_joints = num_upperTwist_joint
         self.num_lowerTwist_joints = num_lowerTwist_joint
+        self.rotate_axis = rotate_axis
         self.control_to_local_orient = control_to_local_orient
         self.side = side
         self.appendage_name = appendage_name
@@ -82,7 +83,8 @@ class TwoBoneFKIK(appendage.Appendage):
         self.fk_controls = fk_setup(self.fk_skeleton)
 
         #IK setup
-        self.ik_controls = ik_setup(self.ik_skeleton , self.control_to_local_orient)
+        print (self.rotate_axis)
+        self.ik_controls = ik_setup(self.ik_skeleton ,self.rotate_axis, self.control_to_local_orient)
 
         # Create blended output
          #TODO : twist joint blending
@@ -176,7 +178,7 @@ def fk_setup(fk_skeleton):
     return fk_controls
 
 
-def ik_setup(ik_skeleton , control_to_local_orient = False):
+def ik_setup(ik_skeleton , rotate_axis, control_to_local_orient = False):
 
     root, root_rn = ik_skeleton[0]
     mid, mid_rn =  ik_skeleton[1]
@@ -185,7 +187,7 @@ def ik_setup(ik_skeleton , control_to_local_orient = False):
     element = str(root_rn.element)
 
     #pole vector
-    #cmds.rotate(0,0,25,mid)
+    cmds.setAttr(f'{mid}.{rotate_axis}',20)
     name_pv = rig_name.RigName(element=element, side=side,
         control_type='ik', rig_type='pv', maya_type='controller')
     pv_position = pole_vector.calculate_pole_vector_position(root, mid, end)
@@ -193,7 +195,7 @@ def ik_setup(ik_skeleton , control_to_local_orient = False):
     # TODO: place pole vector with offsetParentMatrix
     cmds.move(pv_position.x, pv_position.y, pv_position.z, pv_control)
     cmds.makeIdentity(pv_control, apply=True, t=True, r=True, s=True)
-    #cmds.rotate(0,0,0,mid)
+    cmds.setAttr(f'{mid}.{rotate_axis}',0)
 
     name_ik_handle = rig_name.RigName(element=element, side=side,
         control_type='ik', rig_type='handle', maya_type='ikrpsolver')
@@ -222,5 +224,5 @@ def ik_setup(ik_skeleton , control_to_local_orient = False):
 '''
 import adv_scripting.rig.appendages.two_bone_fkik as twoB
 il.reload(twoB)
-arm = twoB.TwoBoneFKIK('arm', 'lt_upArm_bnd_jnt_01', 1, 1, 0)
+arm = twoB.TwoBoneFKIK('arm', 'lt_upArm_bnd_jnt_01', 1, 1, 'lt')
 '''
