@@ -17,7 +17,7 @@ class Arm(two_bone_fkik.TwoBoneFKIK):
                     num_upperTwist_joint,
                     num_lowerTwist_joint,
                     side,
-                    element,
+                    rotate_axis = 'rz',
                     control_to_local_orient=True,
                     input_matrix=None):
         two_bone_fkik.TwoBoneFKIK.__init__( self,
@@ -26,10 +26,11 @@ class Arm(two_bone_fkik.TwoBoneFKIK):
                                             num_upperTwist_joint,
                                             num_lowerTwist_joint,
                                             side,
-                                            element,
+                                            rotate_axis,
                                             control_to_local_orient,
                                             input_matrix)
         self.side = side
+        self.rotate_axis = rotate_axis
         self.control_to_local_orient = control_to_local_orient
         self.setup_arm()
         self.build_arm()
@@ -41,6 +42,7 @@ class Arm(two_bone_fkik.TwoBoneFKIK):
     def setup_arm(self):
         # TODO: Validate/test that there is a parent joint here.
         self.clavicle_joint = cmds.listRelatives(self.start_joint, parent=True)[0]
+        self.spine_joint = cmds.listRelatives(self.clavicle_joint, parent=True)[0]
         cmds.addAttr(self.output, longName='clavicle_matrix', attributeType='matrix')
         self.bnd_joints['clavicle_matrix'] = self.clavicle_joint
 
@@ -68,10 +70,11 @@ class Arm(two_bone_fkik.TwoBoneFKIK):
         cmds.parent(self.fk_controls[0], self.clavicle_control)
         matrix_tools.matrix_parent_constraint(self.clavicle_control, self.fk_controls[0])
         matrix_tools.matrix_parent_constraint(self.clavicle_control, self.ik_skeleton[0][0])
+        matrix_tools.matrix_parent_constraint(self.spine_joint, self.clavicle_control)
 
 
 '''
 import adv_scripting.rig.appendages.arm as arm
 il.reload(arm)
-arm = arm.Arm('arm', 'lt_upArm_bnd_jnt_01', 1, 1, 'lt', 'arm')
+arm = arm.Arm('arm', 'lt_upArm_bnd_jnt_01', 1, 1, 'lt')
 '''
