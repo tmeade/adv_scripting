@@ -7,6 +7,8 @@ import maya.cmds as cmds
 import rig_name
 import utilities
 import adv_scripting.rig.appendages.root as root
+import adv_scripting.rig.appendages.root as hand
+
 
 
 
