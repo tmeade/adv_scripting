@@ -1,9 +1,17 @@
 '''
 tests.py
 
-e.g. Run in command line:
+Run in command line:
 mayapy -m tests -v
 mayapy -m tests -v -f<filename> -fp<filepath -p<projectname>
+
+Use options -f --filename, -fp --filepath, -p --projectname to test on Maya file
+e.g.
+mayapy.exe -m tests -v -fp 'C:/Users/dayz/Documents/maya/projects/adv_scripting/scenes/rigging_skeleton_v04.ma'
+mayapy.exe -m tests -v -f 'rigging_skeleton_v04.ma' -p 'adv_scripting'
+
+To add additional tests, add them to the TestSuite in __main__
+e.g. suite.addTest(TestHandAppendage(test, args.filepath))
 
 Note:
 TestHandAppendage takes filename / filepath as commandline arguments,
@@ -352,7 +360,7 @@ def parse_args(sys_argv):
                 options.filepath = filepath
             else:
                 logger.error(f"File '{options.filename}' not found in project '{options.projectname}'. Path: {filepath}")
-            sys.exit(0)
+                sys.exit(0)
 
         else: # No projectname given
             # Check if filename is filepath
