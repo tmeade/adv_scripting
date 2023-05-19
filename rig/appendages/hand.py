@@ -81,7 +81,7 @@ class Hand(appendage.Appendage):
         # hand_jnt == start_joint if there is no separate wrist
         # e.g. 'lt_hand_bnd_jnt'
         self.wrist_bnd = start_joint
-        self.hand_bnd = None
+        self.hand_bnd = None # Branch split point. Set in read_skeleton method. Can be equal to wrist_bnd
         self.thumb_bnd = None
 
         self.fk_ctrl = dict() # List of fk controls
@@ -95,9 +95,10 @@ class Hand(appendage.Appendage):
         self.blend_switch = None # Blend control for switching FK/IK
         self.blend_matrix = list() # Blend matrices multMatrix
         self.blend_attribute = list() # Blend attribute names
-        self.skeleton_fk = None # IK joints
-        self.skeleton_ik = None # FK joints
-        self.bnd_jnt = list() # bnd joints
+        self.bnd_jnt = list() # All bnd joints
+        self.skeleton_bnd = list() # Bnd joints 2D list with list for each branch/finger
+        self.skeleton_fk = list() # IK joints 2D list
+        self.skeleton_ik = list() # FK joints 2D list
         # uppertwist_jnt is a 2D list containing each branch's upperTwist joints
         # self.uppertwist_jnt = list()
         # lowertwist_jnt is a 2D list containing each branch's lowerTwist joints
@@ -133,7 +134,12 @@ class Hand(appendage.Appendage):
         for child in children:
             self.orient_joint(child)
 
-        # self.bnd_jnt is a 2D list of all branch bind joints
+        # Bnd joint list
+        if self.wrist_bnd == self.hand_bnd or not self.hand_bnd:
+            self.bnd_jnt = [self.wrist_bnd]
+        else:
+            self.bnd_jnt = [self.wrist_bnd, self.hand_bnd]
+        # self.skeleton_bnd is a 2D list of all branch bind joints
         # Contains each branch's start, middle, end joints. Discard any twist/bendy joints.
         # e.g.
         #      [['lt_thumb_bnd_jnt_01', 'lt_thumb_bnd_jnt_02', 'lt_thumb_bnd_jnt_03'],
@@ -145,12 +151,13 @@ class Hand(appendage.Appendage):
             # Determine start middle end joints in each branch
             bnd_jnt_twobone = utils.get_joint_twobone(branch,
                 self.num_upperTwist_joint, self.num_lowerTwist_joint)
-            self.bnd_jnt.append(bnd_jnt_twobone)
+            self.bnd_jnt.extend(bnd_jnt_twobone)
+            self.skeleton_bnd.append(bnd_jnt_twobone)
 
         # Extract FK control skeleton
         wrist_fk, self.skeleton_fk = self.create_control_joints_from_skeleton(
                                 self.wrist_bnd,
-                                self.bnd_jnt,
+                                self.skeleton_bnd,
                                 'fk',
                                 self.num_upperTwist_joint,
                                 self.num_lowerTwist_joint)
@@ -158,7 +165,7 @@ class Hand(appendage.Appendage):
         # Extract IK control skeleton
         wrist_ik, self.skeleton_ik = self.create_control_joints_from_skeleton(
                                 self.wrist_bnd,
-                                self.bnd_jnt,
+                                self.skeleton_bnd,
                                 'ik',
                                 self.num_upperTwist_joint,
                                 self.num_lowerTwist_joint)
@@ -167,15 +174,15 @@ class Hand(appendage.Appendage):
         #logger.debug(f'upperTwist:{self.num_upperTwist_joint}\tlowerTwist:{self.num_lowerTwist_joint}')
         #logger.debug(self.wrist_bnd)
 
-        logger.debug('Bind Joint (self.bnd_jnt):')
-        for branch in self.bnd_jnt:
+        logger.debug('Bind Joint (self.skeleton_bnd):')
+        for branch in self.skeleton_bnd:
             logger.debug(f'\t{branch}')
 
         logger.debug('FK Joint (self.skeleton_fk):')
         for branch in self.skeleton_fk:
             logger.debug(f'\t{branch}')
 
-        logger.debug('IK Joint (self.bnd_jnt):')
+        logger.debug('IK Joint (self.skeleton_bnd):')
         for branch in self.skeleton_ik:
             logger.debug(f'\t{branch}')
 
@@ -289,6 +296,7 @@ class Hand(appendage.Appendage):
                 skeleton_hand = self.read_skeleton(children[1])
                 skeleton_hand.append(self.read_skeleton_branch(children[0]))
             else: # Hand only consists of two branches
+                self.hand_bnd = joint
                 skeleton_hand.append(self.read_skeleton_branch(children[0]))
                 skeleton_hand.append(self.read_skeleton_branch(children[1]))
         elif len(children) > 2: # Hand joint
@@ -570,17 +578,19 @@ class Hand(appendage.Appendage):
         # Connect IK
         for branch in self.skeleton_ik:
             ik_ctrl = self.ik_ctrl[branch[2]]
-            # Connect rotations to behave as orient constraint
-            cmds.connectAttr(f'{ik_ctrl}.rotateX', f'{branch[2]}.rotateX')
-            cmds.connectAttr(f'{ik_ctrl}.rotateY', f'{branch[2]}.rotateY')
-            cmds.connectAttr(f'{ik_ctrl}.rotateZ', f'{branch[2]}.rotateZ')
+            for axis in 'XYZ':
+                # Connect rotate
+                cmds.connectAttr(f'{ik_ctrl}.rotate{axis}', f'{branch[2]}.rotate{axis}')
+                # Connect scale
+                cmds.connectAttr(f'{ik_ctrl}.scale{axis}', f'{branch[2]}.scale{axis}')
+
 
         # multMatrix -> output -> bnd jnt
         # Connect multMatrix to output, connect output to bnd jnt
         for idx in range(len(self.blend_matrix)):
             branch_mat = self.blend_matrix[idx] # Blend matrix
             branch_attr = self.blend_attribute[idx] # Blend attrbute
-            branch_bnd = self.bnd_jnt[idx] # bnd joint
+            branch_bnd = self.skeleton_bnd[idx] # bnd joint
             mat_blend0, mat_blend1, mat_blend2 = branch_mat
             attr_blend0, attr_blend1, attr_blend2 = branch_attr
             bnd0, bnd1, bnd2 = branch_bnd
@@ -647,3 +657,4 @@ def test():
     '''
     hand_lt = Hand('hand', 'lt_wrist_bnd_jnt')
     hand_rt = Hand('hand', 'rt_wrist_bnd_jnt')
+    return hand_lt, hand_rt

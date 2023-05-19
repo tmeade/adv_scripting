@@ -35,7 +35,6 @@ class Appendage(ABC):
         '''
         self.skeleton = cmds.listRelatives(self.start_joint, ad=True)
 
-
         # Run methods
         self.create_appendage_container()
         self.setup()
@@ -57,18 +56,18 @@ class Appendage(ABC):
         '''
         self.appendage_grp = cmds.createNode('transform', name=rig_name.RigName(
                                                         element=self.appendage_name,
-                                                        rig_type='grp'))
+                                                        rig_type='grp').output())
         self.controls_grp = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='controls',
-                                                        rig_type='grp'))
+                                                        rig_type='grp').output())
         self.input = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='input',
-                                                        rig_type='grp'))
+                                                        rig_type='grp').output())
         cmds.addAttr(self.input, longName='input_matrix', attributeType='matrix')
 
         self.output = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='output',
-                                                        rig_type='grp'))
+                                                        rig_type='grp').output())
         if self.input_matrix:
             cmds.connectAttr(self.input_matrix, f'{self.input}.input_matrix')
 
