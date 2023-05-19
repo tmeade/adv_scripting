@@ -15,7 +15,7 @@ logger = logging.getLogger()
 # Constants
 VALID_SIDE_TYPES = ['lt', 'rt', 'ctr']
 VALID_REGION_TYPES = ['front', 'rear', 'middle', 'upper', 'lower', 'start', 'end']
-VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver', 'switch']
+VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver', 'switch', 'proxy']
 VALID_RIG_TYPES = ['ctrl', 'offset', 'sdk', 'handle', 'pv', 'loc', 'jnt', 'geo', 'constraint', 'grp', 'util', 'appendage']
 VALID_MAYA_TYPES = [x.lower() for x in mc.ls(nodeTypes=True)]
 
@@ -41,7 +41,8 @@ PARSE_CONTROL_TYPES = {
     'dyn': ['dyn', 'dn', 'dynamic'],
     'mocap': ['mocap', 'mo', 'moc'],
     'driver': ['driver', 'd', 'dr', 'drv', 'driv'],
-    'switch': ['switch', 's', 'sw', 'swi', 'swt', 'sch', 'swch']
+    'switch': ['switch', 's', 'sw', 'swi', 'swt', 'sch', 'swch'],
+    'proxy': ['proxy', 'pr', 'prx', 'prox', 'prxy']
     }
 PARSE_RIG_TYPES = {
     'ctrl': ['ctrl', 'ctl', 'ctr', 'ctlr', 'control'],
@@ -55,7 +56,7 @@ PARSE_RIG_TYPES = {
     'constraint': ['constraint', 'constr', 'cn', 'con', 'cst', 'cnsr'],
     'grp': ['grp', 'gr', 'gro', 'group'],
     'util': ['util', 'utl', 'uti', 'utility'],
-    'appendage': ['appendage']
+    'appendage': ['appendage', 'appendages', 'apn', 'apd', 'apdg']
 }
 NUM_TYPES = 7
 
@@ -416,7 +417,7 @@ class RigName(NameBase):
         if region:
             self.region = None
         if element:
-            self.region = None
+            self.element = None
         if control_type:
             self.control_type = None
         if rig_type:
@@ -442,12 +443,13 @@ class RigName(NameBase):
         Returns boolean.
         '''
         #logger.debug('========== VALIDATE ==========')
-        if self.full_name == self.output_fullname():
-            return True
 
         # First check if full_name is specified and if so, break it up into individual segments.
         # Potentially allow 'none' as a type if not applicable
         if self.full_name: # If provided full name, separate name components
+
+            if self.full_name == self.output_fullname():
+                return True
 
             # Check that full_name is underscore format
             if not self.is_underscore(self.full_name):
@@ -562,7 +564,7 @@ class RigName(NameBase):
                 full_name = full_name.lower()
             else: # Name is unidentified format
                 logger.error(f'Unknown joint naming convention. '\
-                    'Name {full_name} needs to be in underscore format')
+                    f'Name {full_name} needs to be in underscore format')
 
             # Split full name into segments to parse name types
             name_segments = full_name.split('_')
