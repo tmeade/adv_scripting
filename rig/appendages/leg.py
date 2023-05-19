@@ -28,6 +28,8 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 					num_upleg_joints,
 					num_lowleg_joints,
 					side,
+					rotate_axis = 'rz',
+                    control_to_local_orient=False,
 					input_matrix=None):
 
 		two_bone_fkik.TwoBoneFKIK.__init__( self,
@@ -36,9 +38,13 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 											num_upleg_joints,
 											num_lowleg_joints,
 											side,
+											rotate_axis,
+                                            control_to_local_orient,
 											input_matrix)
 
 		self.side = side
+		self.rotate_axis = rotate_axis
+		self.control_to_local_orient = control_to_local_orient
 		self.setup_foot()
 		self.build_fk_foot()
 		self.build_ik_foot()
@@ -176,5 +182,5 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 '''
 import adv_scripting.rig.appendages.leg as leg
 il.reload(leg)
-log = leg.Leg('leg', 'lt_upLeg_bnd_jnt_01', 1, 1, 'lt')
+leg = leg.Leg('leg', 'lt_upLeg_bnd_jnt_01', 1, 1, 'lt')
 '''
