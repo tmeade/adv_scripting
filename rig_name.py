@@ -15,7 +15,7 @@ logger = logging.getLogger()
 # Constants
 VALID_SIDE_TYPES = ['lt', 'rt', 'ctr']
 VALID_REGION_TYPES = ['front', 'rear', 'middle', 'upper', 'lower', 'start', 'end']
-VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver', 'switch']
+VALID_CONTROL_TYPES = ['ik', 'fk', 'bnd', 'dyn', 'mocap', 'driver', 'switch', 'proxy']
 VALID_RIG_TYPES = ['ctrl', 'offset', 'sdk', 'handle', 'pv', 'loc', 'jnt', 'geo', 'constraint', 'grp', 'util', 'appendage']
 VALID_MAYA_TYPES = [x.lower() for x in mc.ls(nodeTypes=True)]
 
@@ -41,7 +41,8 @@ PARSE_CONTROL_TYPES = {
     'dyn': ['dyn', 'dn', 'dynamic'],
     'mocap': ['mocap', 'mo', 'moc'],
     'driver': ['driver', 'd', 'dr', 'drv', 'driv'],
-    'switch': ['switch', 's', 'sw', 'swi', 'swt', 'sch', 'swch']
+    'switch': ['switch', 's', 'sw', 'swi', 'swt', 'sch', 'swch'],
+    'proxy': ['proxy', 'pr', 'prx', 'prox', 'prxy']
     }
 PARSE_RIG_TYPES = {
     'ctrl': ['ctrl', 'ctl', 'ctr', 'ctlr', 'control'],
@@ -55,7 +56,7 @@ PARSE_RIG_TYPES = {
     'constraint': ['constraint', 'constr', 'cn', 'con', 'cst', 'cnsr'],
     'grp': ['grp', 'gr', 'gro', 'group'],
     'util': ['util', 'utl', 'uti', 'utility'],
-    'appendage': ['appendage']
+    'appendage': ['appendage', 'appendages', 'apn', 'apd', 'apdg']
 }
 NUM_TYPES = 7
 

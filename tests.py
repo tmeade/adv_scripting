@@ -200,7 +200,7 @@ class TestHandAppendage(unittest.TestCase):
                 # Check that bnd jnt is in same position as original
                 position_jnt = utils.read_translate(jnt)
                 position_bnd = utils.read_translate(bnd)
-                position_orig = self.transforms_orig[side][bnd]['position']
+                position_orig = self.transforms_orig[side][bnd]['translate']
                 self.assert_equal(position_bnd, position_orig, msg=
                     f"\nPOSITION bnd '{bnd}' {position_bnd} != original pos {position_orig}")
         logger.info('Passed test position check')
@@ -211,7 +211,7 @@ class TestHandAppendage(unittest.TestCase):
             hand = self.hands[side]
             # Test by moving controls
             for jnt, ctrl in self.controls[side].items():
-                tr_orig = self.transforms_ctrl[side][ctrl]['position']
+                tr_orig = self.transforms_ctrl[side][ctrl]['translate']
                 move = self.get_sum(tr_orig, move_offset)
                 # Switch FKIK
                 if ctrl in hand.fk_ctrl.values(): # FK
