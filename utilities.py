@@ -38,6 +38,29 @@ def create_fk_control(joint, connect_output=None, parent_control=None, rotate_or
 
 # RENAME / REPLACE SKELETON OR HIERARCHY ===============================
 
+def read_hierarchy(joint, end_joint=None):
+    '''
+    Read hierarchy from joint to end_joint.
+
+    Arguments
+    joint (str): joint name
+    end_joint (str): end joint name
+
+    Returns
+    joint_map (dict) (str->RigName): mapping of joint name to RigName
+    '''
+    joint_map = dict()
+    jnt_rn = rig_name.RigName(joint)
+    jnt = jnt_rn.output()
+    joint_map[jnt] = jnt_rn
+    if joint != end_joint:
+        children = cmds.listRelatives(jnt) or []
+        for child in children:
+            child_joint_map = read_hierarchy(child, end_joint)
+            joint_map.update(child_joint_map)
+    return joint_map
+
+
 def rename_hierarchy(joint, end_joint=None, unlock=True):
     '''
     Rename hierarchy from joint to end_joint.
@@ -55,16 +78,17 @@ def rename_hierarchy(joint, end_joint=None, unlock=True):
     parent = cmds.listRelatives(joint, p=True)
     if parent:
         cmds.parent(joint, w=True) # Move joint to world to avoid prefix
-    jnt = rig_name.RigName(joint) # Create RigName for joint
-    cmds.rename(joint, jnt.name)
-    joint_map[jnt.name] = jnt
+    jnt_rn = rig_name.RigName(joint) # Create RigName for joint
+    jnt = jnt_rn.output()
+    cmds.rename(joint, jnt)
+    joint_map[jnt] = jnt_rn
     if unlock: # Unlock attributes
-        unlock_all(jnt.name)
+        unlock_all(jnt)
     if parent: # Move joint back under parent
-        cmds.parent(jnt.name, parent)
+        cmds.parent(jnt, parent)
 
     if joint != end_joint:
-        children = cmds.listRelatives(jnt.name) or []
+        children = cmds.listRelatives(jnt) or []
         for child in children:
             child_joint_map = rename_hierarchy(child, end_joint)
             joint_map.update(child_joint_map)
@@ -104,8 +128,8 @@ def replace_hierarchy(joint, end_joint=None,
         jnt_name = joint
 
     # Create RigName object and rename
-    jnt = rig_name.RigName(jnt_name)
-    jnt.rename(full_name, side, region, element, control_type, rig_type, maya_type, position)
+    jnt = rig_name.RigName(jnt_name).rename(
+        full_name, side, region, element, control_type, rig_type, maya_type, position)
 
     # Check for duplicates
     dupe = cmds.ls(jnt.output())
@@ -571,13 +595,14 @@ def display_color(node, color_index):
 # READ JOINT TRANSFORMS ================================================
 # (Used in tests.py)
 
-def read_transforms_hierarchy(node, end_node=None):
+def read_transforms_hierarchy(node, end_node=None, os=0):
     '''
     Read transforms of all nodes in hierarchy from node to end_node.
 
     Arguments
     node (str): object name
     end_node (str): end object name
+    os (boolean): object space
 
     Returns
     transforms (dict): mapping of transforms including
@@ -585,18 +610,25 @@ def read_transforms_hierarchy(node, end_node=None):
     '''
     transforms = {
         node: {
-            'position': None,
             'translate': None,
             'rotate': None,
             'scale': None,
             'jointOrient': None
         }
     }
-    transforms[node]['position'] = read_translate(node, os=0) # world space
-    transforms[node]['translate'] = read_translate(node, os=1) # local space
-    transforms[node]['rotate'] = read_rotate(node) # world space
-    transforms[node]['scale'] = read_scale(node) # world space
-    transforms[node]['jointOrient'] = read_joint_orient(node)
+
+    if os: # object space
+        transforms[node]['position'] = read_translate(node, os=0) # world space
+        transforms[node]['translate'] = read_translate(node, os=1) # local space
+        transforms[node]['rotate'] = read_rotate(node, os=1) # object space
+        transforms[node]['scale'] = read_scale(node, os=1) # object space
+        transforms[node]['jointOrient'] = read_joint_orient(node)
+
+    else: # world space
+        transforms[node]['translate'] = read_translate(node) # world space
+        transforms[node]['rotate'] = read_rotate(node) # world space
+        transforms[node]['scale'] = read_scale(node) # world space
+        transforms[node]['jointOrient'] = read_joint_orient(node)
 
     if node != end_node:
         children = cmds.listRelatives(node) or []
@@ -605,12 +637,13 @@ def read_transforms_hierarchy(node, end_node=None):
             transforms.update(child_transforms)
     return transforms
 
-def read_transforms_list(nodes):
+def read_transforms_list(nodes, os=0):
     '''
     Read transforms of all nodes in given list.
 
     Arguments
     nodes (str list): list of objects
+    os (boolean): object space
 
     Returns
     transforms (dict): mapping of transforms including
@@ -624,12 +657,22 @@ def read_transforms_list(nodes):
             'translate': None,
             'rotate': None,
             'scale': None,
+            'jointOrient': None
         }
-        transforms[node]['position'] = read_translate(node, os=0)
-        transforms[node]['translate'] = read_translate(node, os=1)
-        transforms[node]['rotate'] = read_rotate(node)
-        transforms[node]['scale'] = read_scale(node)
-        transforms[node]['jointOrient'] = read_joint_orient(node)
+
+        if os: # object space
+            transforms[node]['position'] = read_translate(node, os=0)
+            transforms[node]['translate'] = read_translate(node, os=1)
+            transforms[node]['rotate'] = read_rotate(node, os=1)
+            transforms[node]['scale'] = read_scale(node, os=1)
+            transforms[node]['jointOrient'] = read_joint_orient(node)
+
+        else: # world space
+            transforms[node]['translate'] = read_translate(node)
+            transforms[node]['rotate'] = read_rotate(node)
+            transforms[node]['scale'] = read_scale(node)
+            transforms[node]['jointOrient'] = read_joint_orient(node)
+
     return transforms
 
 def read_translate(node, os=0):
@@ -671,7 +714,7 @@ def make_identity(node):
                 if not cmds.getAttr(attribute_name, lock=True):
                     cmds.setAttr(attribute_name, value)
 
-def reset_transform(node, transform):
+def reset_transform(node, transform, os=0):
     '''
     Set transforms of node to given transform.
 
@@ -685,9 +728,15 @@ def reset_transform(node, transform):
          'jointOrient': <value>
         }
     '''
-    cmds.xform(node, t=transform['position'], ws=1)
-    cmds.xform(node, ro=transform['rotate'], ws=1)
-    cmds.xform(node, s=transform['scale'], ws=1)
+    if os:
+        cmds.xform(node, t=transform['position'], ws=1)
+        cmds.xform(node, t=transform['translate'], os=1)
+        cmds.xform(node, ro=transform['rotate'], os=1)
+        cmds.xform(node, s=transform['scale'], os=1)
+    else:
+        cmds.xform(node, t=transform['translate'], ws=1)
+        cmds.xform(node, ro=transform['rotate'], ws=1)
+        cmds.xform(node, s=transform['scale'], ws=1)
     if cmds.objectType(node, isType='joint'):
         cmds.joint(node, o=transform['jointOrient'])
 
