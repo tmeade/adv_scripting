@@ -753,19 +753,20 @@ def delete_useless_joint(root, keyword):
     for joint in joint_hierarchy:
         if joint not in element_joints:
             cmds.delete(joint)
+    return
 
 def getSurfaceCoordinate(surface, joint):
-	# Get the position of the joint
-	joint_position = cmds.xform(joint, query=True, translation=True, worldSpace=True)
+    # Get the position of the joint
+    joint_position = cmds.xform(joint, query=True, translation=True, worldSpace=True)
 
-	# Determine the closest point on the surface to the joint
-	closest_point_info = cmds.skinPercent(surface, closestPoint=True, query=True, position=joint_position)
+    # Determine the closest point on the surface to the joint
+    closest_point_info = cmds.skinPercent(surface, closestPoint=True, query=True, position=joint_position)
 
-	# Convert the closest point to UV coordinates
-	cmds.polyListComponentConversion(toUV=True)
-	uv_values = cmds.polyEditUV(query=True, u=True, v=True)
+    # Convert the closest point to UV coordinates
+    cmds.polyListComponentConversion(toUV=True)
+    uv_values = cmds.polyEditUV(query=True, u=True, v=True)
 
-	# Print the UV-coordinate values
-	print("UV Coordinates: U={}, V={}".format(uv_values[0], uv_values[1]))
+    # Print the UV-coordinate values
+    print("UV Coordinates: U={}, V={}".format(uv_values[0], uv_values[1]))
 
     return
