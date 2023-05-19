@@ -94,6 +94,8 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 					                                                    rig_name.ControlType('ik'),
 					                                                    0,
 																		0)
+		#self.ik_foot_skeleton = 
+
 
 	def build_fk_foot(self):
 		logger.debug('build_fk_foot')
@@ -102,7 +104,6 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		# hierarchy.
 		self.ball_ctrl = utils.create_fk_control(self.fk_foot_skeleton[1][1].output(),
                                                  parent_control=self.fk_controls[-1])
-
 	def build_ik_foot(self):
 		logger.debug('build_ik_foot')
 
@@ -144,13 +145,20 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		# Create ik pivot HIERARCHY
 		matrix_tools.snap_offset_parent_matrix(self.toe_ik_control, self.ik_foot_skeleton[2][1].output())
 		matrix_tools.snap_offset_parent_matrix(self.ball_ik_control, self.ik_foot_skeleton[1][1].output())
-		cmds.parent(self.toe_ik_control, self.ball_ik_control)
+		cmds.parent(self.ball_ik_control, self.toe_ik_control)
 		cmds.parent(self.toe_ik_handle, self.toe_ik_control)
 		cmds.parent(self.ball_ik_handle, self.toe_ik_control)
 
 		# TODO: Use self.ik_controls to get the ankleIK handle and parent it here.
-		cmds.parent(self.ik_controls[0], self.toe_ik_control)
-		cmds.parent(self.ball_ik_control, self.controls_grp)
+		#cmds.parent(self.ik_controls[0], self.toe_ik_control)
+		cmds.parent(self.toe_ik_control, self.controls_grp)
+
+		cmds.pointConstraint(self.ik_foot_skeleton[0], self.ik_handle)
+		#how to call lef ik handle from twobone fk ik...
+
+
+		cmds.parent(self.ik_foot_skeleton[0], self.toe_ik_control)
+
 
 
 
