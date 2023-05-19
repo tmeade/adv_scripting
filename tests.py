@@ -32,11 +32,11 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-
 import importlib as il
 il.reload(rig_name)
 il.reload(utils)
 il.reload(hand)
+
 
 class TestRigName(unittest.TestCase):
     def setUp(self):
