@@ -16,23 +16,22 @@ logger = logging.getLogger()
 
 class AnimExporter():
 
-    def __init__(self, root_jnt):
+    def __init__(self, root_jnt, controls):
         '''
         Arguments:
         root_jnt: root joint / starting bind joint of skeleton
         '''
+        self.controls = controls
         self.bnd_jnt = list()
         self.proxy_jnt = list()
         self.transforms = dict()
         self.keyset = dict()
 
-        # TODO get all the controls as well
-        # Not sure how we're storing the controls for the entire rig combined?
-
         self.setup(root_jnt)
-        self.animation_bake()
-        self.export_camera()
-        self.export_file()
+        self.bake_animation()
+        self.export_animation()
+        #self.export_file()
+
 
     def setup(self, root_jnt):
         # Store bnd joints
@@ -45,7 +44,8 @@ class AnimExporter():
         # Store proxy joints
         self.proxy_jnt = list(proxy_dict.keys())
 
-    def animation_bake(self):
+
+    def bake_animation(self):
         # Constrain duplicate to original
         for bnd, prx in zip(self.bnd_jnt, self.proxy_jnt):
             cmds.parentConstraint(bnd, prx)
@@ -53,7 +53,8 @@ class AnimExporter():
         # Get transform values on each joint
         self.transforms = utils.read_transforms_hierarchy(self.proxy_jnt[0], os=1)
 
-    def export_camera(self):
+
+    def export_animation(self):
 
         # Get scene frame range
         start_frame = int(cmds.playbackOptions(q=True, min=True))
@@ -64,33 +65,43 @@ class AnimExporter():
             self.keyset[frame] = dict()
             for jnt in self.proxy_jnt:
                 self.keyset[frame][jnt] = dict()
+            for ctrl in self.controls:
+                self.keyset[frame][ctrl] = dict()
 
-        # Iterate through each proxy jnt
+        # Iterate through each object and get animation data
         for jnt in self.proxy_jnt:
-            anim_attributes = cmds.listAnimatable(jnt)
+            self.get_anim_data(jnt)
+        for ctrl in self.controls:
+            self.get_anim_data(ctrl)
 
-            for attribute in anim_attributes:
 
-                # Get keys for each attribute
-                num_keys = cmds.keyframe(attribute, q=True, kc=True)
-                if num_keys:
-                    times = cmds.keyframe(attribute, q=True, index=(0,num_keys), tc=True)
-                    # Get attribute value
-                    values = cmds.keyframe(attribute, q=True, index=(0,num_keys), vc=True)
-                    # Get tangents on each attribute
-                    tangents = cmds.keyframe(attribute, q=True, index=(0,num_keys), ev=True)
+    def get_anim_data(self, node):
+        anim_attributes = cmds.listAnimatable(node)
 
-                for key in range(0, num_keys):
-                    logger.debug(f'{key} {times[key]} {values[key]} {tangents[key]}')
-                    frame = values[key][0]
-                    # Get transform values on each joint
-                    self.keyset[frame][jnt][attribute] = values[key]
-                    self.keyset[frame][jnt]['tangent'] = tangents[key]
+        for attribute in anim_attributes:
+
+            # Get keys for each attribute
+            num_keys = cmds.keyframe(attribute, q=True, kc=True)
+            if num_keys:
+                times = cmds.keyframe(attribute, q=True, index=(0,num_keys), tc=True)
+                # Get attribute value
+                values = cmds.keyframe(attribute, q=True, index=(0,num_keys), vc=True)
+                # Get tangents on each attribute
+                tangents = cmds.keyframe(attribute, q=True, index=(0,num_keys), ev=True)
+
+            for key in range(0, num_keys):
+                logger.debug(f'{key} {times[key]} {values[key]} {tangents[key]}')
+                frame = values[key][0]
+                # Get transform values on each joint
+                self.keyset[frame][node][attribute] = values[key]
+                self.keyset[frame][node]['tangent'] = tangents[key]
+
 
     def import_file(self, filename):
         with open(filename, 'r') as import_file:
             data_json = json.load(import_file)
         return data_json
+
 
     def export_file(self):
         # Write to file
@@ -104,4 +115,15 @@ class AnimExporter():
 
 
 def test():
-    exporter = AnimExporter('root_bnd_jnt')
+    import adv_scripting.rig.appendages.hand as hand
+    hand_lt, hand_rt = hand.test()
+    controls = list()
+    controls.extend(hand_lt.controls['fk'].values())
+    controls.extend(hand_lt.controls['ik'].values())
+    controls.extend(hand_rt.controls['switches'].values())
+    controls.extend(hand_rt.controls['fk'].values())
+    controls.extend(hand_rt.controls['ik'].values())
+    controls.extend(hand_rt.controls['switches'].values())
+
+    exporter = AnimExporter('root_bnd_jnt', controls)
+    return exporter
