@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>publish_dialog</class>
+ <widget class="QDialog" name="publish_dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>688</width>
+    <height>370</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Publish Items</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QVBoxLayout" name="main_publish_layout">
+     <item>
+      <layout class="QHBoxLayout" name="context_hz_layout">
+       <item>
+        <widget class="QLabel" name="project_lbl">
+         <property name="text">
+          <string>Project:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="project_le"/>
+       </item>
+       <item>
+        <widget class="QLabel" name="scene_lbl">
+         <property name="text">
+          <string>Scene</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="scene_le"/>
+       </item>
+       <item>
+        <widget class="QLabel" name="shot_lbl">
+         <property name="text">
+          <string>Shot:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="shot_le"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QListWidget" name="char_lw"/>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="buttons_hz_layout">
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="close_btn">
+         <property name="text">
+          <string>Close</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="publish_btn">
+         <property name="text">
+          <string>Publish</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
