@@ -332,6 +332,27 @@ def create_control(node, parent=None, size=1, name=None):
     matrix_tools.snap_offset_parent_matrix(ctrl, node)
     return ctrl
 
+def create_group(node, parent=None, name=None, rig_type='grp'):
+    '''
+    Build an empty group / transform at position of node.
+    Move group under parent if provided.
+    '''
+    if name:
+        grp = cmds.createNode('transform', n=name)
+    else:
+        grp_rn = rig_name.RigName(node).rename(rig_type=rig_type, maya_type='transform')
+        grp = cmds.createNode('transform', n=grp_rn.output())
+    #logger.debug(f'Created group: {grp}')
+    if parent:
+        cmds.parent(grp, parent)
+        # modify grp's transform to match parent
+        cmds.matchTransform(grp, parent, pos=1, rot=1, scl=1, piv=1)
+        # freeze transformations
+        cmds.makeIdentity(grp, apply=True, t=1, r=1, s=1, n=0)
+    # match grp's transform to node
+    matrix_tools.snap_offset_parent_matrix(grp, node)
+    return grp
+
 def create_control_pv(pv_pos, pv_name, ik_handle, parent=None, size=1):
     '''
     Build a nurbs circle control at position of node.
@@ -350,6 +371,38 @@ def create_control_pv(pv_pos, pv_name, ik_handle, parent=None, size=1):
         [0,0.5,0], [0,-0.5,1], [1,-0.5,0], [0,0.5,0], [-1,-0.5,0]]
     pv_ctrl = cmds.curve(d=1, p=pts_pyramid, n=pv_name)
     cmds.xform(pv_ctrl, s=(size,size,size))
+    cmds.makeIdentity(pv_ctrl, apply=True, t=1, r=1, s=1, n=0)
+
+    # Parent pv under parent if provided
+    if parent:
+        cmds.parent(pv_ctrl, parent, a=True)
+        # modify ctrl's transform to match parent
+        cmds.matchTransform(pv_ctrl, parent, pos=1, rot=1, scl=1, piv=1)
+        # freeze transformations
+        cmds.makeIdentity(pv_ctrl, apply=True, t=1, r=1, s=1, n=0)
+    # move pv_ctrl to absolute position
+    cmds.move(pv_pos.x, pv_pos.y, pv_pos.z, pv_ctrl, a=True)
+    # transfer values to offsetParentMatrix
+    transform_mat = om.MMatrix(cmds.xform(pv_ctrl, q=True, m=True, ws=False))
+    cmds.setAttr(f'{pv_ctrl}.offsetParentMatrix', transform_mat, typ='matrix')
+    make_identity(pv_ctrl)
+    cmds.poleVectorConstraint(pv_ctrl, ik_handle)
+    return pv_ctrl
+
+def create_group_pv(pv_pos, pv_name, ik_handle, parent=None):
+    '''
+    Build an empty group at position of node.
+    Size determines circle's radius. Move control under parent if provided.
+
+    Arguments:
+    pos (float tuple): (x,y,z) position of pole vector
+    parent (str): parent of control, if any
+    size (str): control radius
+
+    Returns name of created control.
+    '''
+    # Create pv ctrl group
+    pv_ctrl = cmds.createNode('transform', n=pv_name)
     cmds.makeIdentity(pv_ctrl, apply=True, t=1, r=1, s=1, n=0)
 
     # Parent pv under parent if provided
@@ -396,27 +449,6 @@ def create_control_copy(control, node, parent=None, size=1):
     # match ctrl's transform to node
     matrix_tools.snap_offset_parent_matrix(ctrl, node)
     return ctrl
-
-def create_group(node, parent=None, name=None):
-    '''
-    Build an empty group / transform at position of node.
-    Move group under parent if provided.
-    '''
-    if name:
-        grp = cmds.createNode('transform', n=name)
-    else:
-        grp_rn = rig_name.RigName(node).rename(rig_type='grp', maya_type='transform')
-        grp = cmds.createNode('transform', n=grp_rn.output())
-    #logger.debug(f'Created group: {grp}')
-    if parent:
-        cmds.parent(grp, parent)
-        # modify grp's transform to match parent
-        cmds.matchTransform(grp, parent, pos=1, rot=1, scl=1, piv=1)
-        # freeze transformations
-        cmds.makeIdentity(grp, apply=True, t=1, r=1, s=1, n=0)
-    # match grp's transform to node
-    matrix_tools.snap_offset_parent_matrix(grp, node)
-    return grp
 
 
 # BLEND SKELETON =======================================================
