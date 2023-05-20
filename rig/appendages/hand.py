@@ -390,14 +390,12 @@ class Hand(appendage.Appendage):
         branch_ctrl_sz = 1 # Control shape size
 
         # Build wrist bnd control
-        name_wrist = rig_name.RigName(self.wrist_bnd).rename(rig_type='ctrl', maya_type='transform').output()
-        wrist_ctrl = utils.create_group(self.wrist_bnd, self.controls_grp, name_wrist)
+        wrist_ctrl = utils.create_group(self.wrist_bnd, self.controls_grp, rig_type='ctrl')
         self.fk_ctrl[self.wrist_bnd] = wrist_ctrl
 
         # Build hand bnd control
         if self.wrist_bnd != self.hand_bnd:
-            name_hand = rig_name.RigName(self.hand_bnd).rename(rig_type='ctrl', maya_type='transform').output()
-            hand_ctrl = utils.create_group(self.hand_bnd, wrist_ctrl, name_hand)
+            hand_ctrl = utils.create_group(self.hand_bnd, wrist_ctrl, rig_type='ctrl')
             utils.display_color(hand_ctrl, 15) # Blue display color
             self.fk_ctrl[self.hand_bnd] = hand_ctrl
         else:
@@ -423,11 +421,15 @@ class Hand(appendage.Appendage):
             thumb_fk = rig_name.RigName(self.thumb_bnd).rename(control_type='fk').output()
         for branch in self.skeleton_fk:
             if branch[0] == thumb_fk:
-                ctrlfk0 = utils.create_control(branch[0], wrist_ctrl, branch_ctrl_sz)
+                #ctrlfk0 = utils.create_control(branch[0], wrist_ctrl, branch_ctrl_sz)
+                ctrlfk0 = utils.create_group(branch[0], wrist_ctrl, rig_type='ctrl')
             else:
-                ctrlfk0 = utils.create_control(branch[0], fk_ctrl_grp, branch_ctrl_sz)
-            ctrlfk1 = utils.create_control(branch[1], ctrlfk0, branch_ctrl_sz)
-            ctrlfk2 = utils.create_control(branch[2], ctrlfk1, branch_ctrl_sz)
+                #ctrlfk0 = utils.create_control(branch[0], fk_ctrl_grp, branch_ctrl_sz)
+                ctrlfk0 = utils.create_group(branch[0], fk_ctrl_grp, rig_type='ctrl')
+            #ctrlfk1 = utils.create_control(branch[1], ctrlfk0, branch_ctrl_sz)
+            #ctrlfk2 = utils.create_control(branch[2], ctrlfk1, branch_ctrl_sz)
+            ctrlfk1 = utils.create_group(branch[1], ctrlfk0, rig_type='ctrl')
+            ctrlfk2 = utils.create_group(branch[2], ctrlfk1, rig_type='ctrl')
             utils.display_color(ctrlfk0, 15) # Blue display color
             utils.display_color(ctrlfk1, 15)
             utils.display_color(ctrlfk2, 15)
@@ -456,9 +458,11 @@ class Hand(appendage.Appendage):
         for branch in self.skeleton_ik:
             name_ik = rig_name.RigName(branch[2]).rename(control_type='ik', rig_type='ctrl').remove(position=1).output()
             if branch[0] == thumb_ik:
-                ctrlik = utils.create_control(branch[2], wrist_ctrl, branch_ctrl_sz, name_ik)
+                #ctrlik = utils.create_control(branch[2], wrist_ctrl, branch_ctrl_sz, name_ik)
+                ctrlik = utils.create_group(branch[2], wrist_ctrl, name_ik)
             else:
-                ctrlik = utils.create_control(branch[2], ik_ctrl_grp, branch_ctrl_sz, name_ik)
+                #ctrlik = utils.create_control(branch[2], ik_ctrl_grp, branch_ctrl_sz, name_ik)
+                ctrlik = utils.create_group(branch[2], ik_ctrl_grp, name_ik)
             utils.display_color(ctrlik, 10) # Peach display color
             self.ik_ctrl[branch[2]] = ctrlik
 
@@ -504,7 +508,8 @@ class Hand(appendage.Appendage):
             # Pole vector
             pv_pos = pole_vector.calculate_pole_vector_position(ik0, ik1, ik2)
             name_pv = rig_name.RigName(ik_ctrl).rename(rig_type='pv', maya_type='controller')
-            pv_ctrl = utils.create_control_pv(pv_pos, name_pv.output(), ik_handle, self.pv_ctrl_grp, pv_ctrl_sz)
+            #pv_ctrl = utils.create_control_pv(pv_pos, name_pv.output(), ik_handle, self.pv_ctrl_grp, pv_ctrl_sz)
+            pv_ctrl = utils.create_group_pv(pv_pos, name_pv.output(), ik_handle, self.pv_ctrl_grp)
             self.pv_ctrl[ik_ctrl] = pv_ctrl
 
             # Name each blend node based on name of FK joint
@@ -556,18 +561,26 @@ class Hand(appendage.Appendage):
         Connect the output matrices to their corresponding joints in the source skeleton
         '''
         # Connect visibility
-        reverse = cmds.createNode('reverse', n=f'{self.appendage_name}_visibility_reverse')
+        cond_ik = cmds.createNode('multDoubleLinear', n=f'{self.side}_{self.appendage_name}_visibility_ik_multDoubleLinear')
+        cond_fk = cmds.createNode('multDoubleLinear', n=f'{self.side}_{self.appendage_name}_visibility_fk_multDoubleLinear')
+        reverse = cmds.createNode('reverse', n=f'{self.side}_{self.appendage_name}_visibility_reverse')
+        cmds.connectAttr(f'{self.blend_switch}.visibility', f'{cond_ik}.input1')
+        cmds.connectAttr(f'{self.blend_switch}.visibility', f'{cond_fk}.input1')
+        cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{cond_ik}.input2')
+        cmds.connectAttr(f'{reverse}.outputX', f'{cond_fk}.input2')
         cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{reverse}.inputX')
-        cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{self.ik_jnt_grp}.visibility')
-        cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{self.ik_ctrl_grp}.visibility')
-        cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{self.pv_ctrl_grp}.visibility')
-        cmds.connectAttr(f'{reverse}.outputX', f'{self.fk_jnt_grp}.visibility')
-        cmds.connectAttr(f'{reverse}.outputX', f'{self.fk_ctrl_grp}.visibility')
+        visibility_ik = f'{cond_ik}.output'
+        visibility_fk = f'{cond_fk}.output'
+        cmds.connectAttr(visibility_ik, f'{self.ik_jnt_grp}.visibility')
+        cmds.connectAttr(visibility_ik, f'{self.ik_ctrl_grp}.visibility')
+        cmds.connectAttr(visibility_ik, f'{self.pv_ctrl_grp}.visibility')
+        cmds.connectAttr(visibility_fk, f'{self.fk_jnt_grp}.visibility')
+        cmds.connectAttr(visibility_fk, f'{self.fk_ctrl_grp}.visibility')
         if self.thumb_bnd: # Thumb is separate from hand jnt
             thumb_fk = rig_name.RigName(self.thumb_bnd).rename(control_type='fk', rig_type='ctrl').output()
             thumb_ik = rig_name.RigName(self.thumb_bnd).rename(control_type='ik', rig_type='ctrl').remove(position=1).output()
-            cmds.connectAttr(f'{self.blend_switch}.switch_fkik', f'{thumb_ik}.visibility')
-            cmds.connectAttr(f'{reverse}.outputX', f'{thumb_fk}.visibility')
+            cmds.connectAttr(visibility_ik, f'{thumb_ik}.visibility')
+            cmds.connectAttr(visibility_fk, f'{thumb_fk}.visibility')
 
         # Connect FK
         for branch in self.skeleton_fk:
