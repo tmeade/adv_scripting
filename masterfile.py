@@ -6,7 +6,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 class MasterFile():
-    def __init__(self, project=None, context=None, type=None, category=None):
+    def __init__(self, asset_name, project=None, context=None, type=None, category=None):
+        self.asset_name = asset_name
         self.project = project
         self.context = context
         self.type = type
@@ -20,19 +21,21 @@ class MasterFile():
 
     def read(self, version=None):
         logger.info('read')
-        if os.path.isfile(os.path.join(self.file_path(),'masterfile.json')):
-            file_object = open(os.path.join(self.file_path(),'masterfile.json'), 'r')
-            data = json.load(file_object)
+        if os.path.isfile(os.path.join(self.file_path(), 'masterfile.json')):
+            file_object = open(os.path.join(self.file_path(), 'masterfile.json'), 'r')
+            self.data = json.load(file_object)
             file_object.close()
 
-            self.version = max(data.keys())
-            if version:
-                for key in data:
-                    if key == version:
-                        self.data[key] = data[key]
-            else:
-                self.data[self.version] = data[self.version]
-
+            self.version = max(self.data[self.asset_name].keys())
+            print('version', self.version)
+            print('asset_name', self.asset_name)
+            # if version:
+            #     for key in data:
+            #         if key == version:
+            #             self.data[self.asset_name][key] = data[key]
+            # else:
+            # self.data[self.asset_name] = {self.version: self.data[self.asset_name][self.version]}
+                # self.data[self.asset_name][self.version] = {}
 
 
     def write(self):
@@ -42,11 +45,6 @@ class MasterFile():
         file_object.close()
 
         logger.info(f'Wrote masterfile to: \n{self.file_path()}')
-
-    # def create_version(self):
-    #     logger.info('create_version')
-    #     if self.version:
-    #         self.data[self.version+1] = 'rig_scene': self.m
 
     def get_version(self):
         logger.info('get_version')
@@ -68,33 +66,44 @@ class MasterFile():
 
 
 class RigFile(MasterFile):
-    def __init__(self, project='gen', context='assets', asset_name='gen_man', asset_variant='base', maya_scene=None):
-            MasterFile.__init__(self,
-                                project=project,
-                                context=context,
-                                type=asset_name,
-                                category=asset_variant)
-            self.maya_scene = maya_scene
-
-    def create_version(self):
-        logger.info('create_version')
-        if self.version:
-            self.data[str(int(self.version)+1)] = {'rig_scene': self.maya_scene}
-            logger.debug(f'Appended new version to data {data[str(int(self.version)+1)]}')
-        else:
-            self.data = {'1': {'rig_scene': self.maya_scene}}
-            logger.debug(f'Created initial data entry: {self.data}')
-
-class AnimFile(MasterFile):
     def __init__(self,
                 project='gen',
                 context='assets',
                 asset_name='gen_man',
                 asset_variant='base',
+                maya_scene=None):
+            MasterFile.__init__(self,
+                                asset_name,
+                                project=project,
+                                context=context,
+                                type=asset_name,
+                                category=asset_variant)
+            self.maya_scene = maya_scene
+            self.asset_name = asset_name
+
+    def create_version(self):
+        logger.info('create_version')
+        if self.version:
+            print('version', self.version)
+            self.data[self.asset_name][str(int(self.version)+1)] = {'rig_scene': self.maya_scene}
+            logger.debug(f'Appended new version to data {self.data[self.asset_name][str(int(self.version)+1)]}')
+        else:
+            print ('data', self.data)
+            self.data = {self.asset_name : {'1': {'rig_scene': self.maya_scene}}}
+            logger.debug(f'Created initial data entry: {self.data}')
+
+class AnimFile(MasterFile):
+    def __init__(self,
+                project='gen',
+                context='shots',
+                scene= '001',
+                shot= '010',
                 maya_scene=None,
                 baked_anim=None,
-                anim_curves=None):
+                anim_curves=None,
+                asset_name = 'gen_man'):
             MasterFile.__init__(self,
+                                asset_name,
                                 project=project,
                                 context=context,
                                 type=asset_name,
@@ -106,10 +115,13 @@ class AnimFile(MasterFile):
     def create_version(self):
         logger.info('create_version')
         if self.version:
-            self.data[str(int(self.version)+1)] = {'anim_scene': self.maya_scene,
+            self.data[self.asset_name] = {str(int(self.version)+1): {
+                                                    'anim_scene': self.maya_scene,
                                                     'baked_anim': self.baked_anim,
-                                                    'anim_curves': self.anim_curves}
+                                                    'anim_curves': self.anim_curves}}
             logger.debug(f'Appended new version to data {data[str(int(self.version)+1)]}')
         else:
-            self.data = {'1': {'rig_scene': self.maya_scene}}
+            self.data = {self.asset_name: {'1': {'anim_scene': self.maya_scene,
+                                'baked_anim': self.baked_anim,
+                                'anim_curves': self.anim_curves}}}
             logger.debug(f'Created initial data entry: {self.data}')
