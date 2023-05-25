@@ -29,6 +29,8 @@ class MasterFile():
             self.version = max(self.data[self.asset_name].keys())
             print('version', self.version)
             print('asset_name', self.asset_name)
+        else:
+            logger.info('Masterfile does not exist.')
             # if version:
             #     for key in data:
             #         if key == version:
@@ -106,8 +108,8 @@ class AnimFile(MasterFile):
                                 asset_name,
                                 project=project,
                                 context=context,
-                                type=asset_name,
-                                category=asset_variant)
+                                type=scene,
+                                category=shot)
             self.maya_scene = maya_scene
             self.baked_anim = baked_anim
             self.anim_curves = anim_curves
@@ -115,11 +117,11 @@ class AnimFile(MasterFile):
     def create_version(self):
         logger.info('create_version')
         if self.version:
-            self.data[self.asset_name] = {str(int(self.version)+1): {
+            self.data[self.asset_name][str(int(self.version)+1)] = {
                                                     'anim_scene': self.maya_scene,
                                                     'baked_anim': self.baked_anim,
-                                                    'anim_curves': self.anim_curves}}
-            logger.debug(f'Appended new version to data {data[str(int(self.version)+1)]}')
+                                                    'anim_curves': self.anim_curves}
+            logger.debug(f'Appended new version to data {self.data[self.asset_name][str(int(self.version)+1)]}')
         else:
             self.data = {self.asset_name: {'1': {'anim_scene': self.maya_scene,
                                 'baked_anim': self.baked_anim,

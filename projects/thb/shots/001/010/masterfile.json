@@ -1,0 +1,19 @@
+{
+"bilbo": {
+"1": {
+"anim_curves": "path/to/curves",
+"anim_scene": "/Users/tmeade/Downloads/Fred_Rig.ma",
+"baked_anim": "path/to/bake"
+},
+"2": {
+"anim_curves": "path/to/curves",
+"anim_scene": "/Users/tmeade/Downloads/Fred_Rig.ma",
+"baked_anim": "path/to/bake"
+},
+"3": {
+"anim_curves": "path/to/curves",
+"anim_scene": "/Users/tmeade/Downloads/Fred_Rig.ma",
+"baked_anim": "path/to/bake"
+}
+}
+}
