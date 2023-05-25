@@ -10,7 +10,7 @@ import adv_scripting.publish_animation.publish_data as pd
 def get_publishable_assests():
     import maya.cmds as mc
     publishable_assests = list()
-    for item in mc.ls(type='locator'):
+    for item in mc.ls(type='transform'):
         if mc.attributeQuery('asset_name', node=item, exists=True):
             publishable_assests.append(item)
 
