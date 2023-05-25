@@ -46,7 +46,8 @@ SETTINGS = {'Root': {
 CONTROL_SHAPES = {'Root': 'circle', 'wrist_ik_ctrl': 'cross'}
 
 def tag_rig_node(rig_grp, name):
-    pass
+    cmds.addAttr(rig_grp, longName='AssetName', dt='string')
+    cmds.addAttr(rig_grp, longName='RigVersion', dt='string')
 
 class Rig():
     def __init__(self, name, settings):
@@ -68,6 +69,11 @@ class Rig():
         tag_rig_node(self.rig_grp, self.name)
 
         # TODO: add skelton grp
+        self.skeleton_grp = cmds.createNode('transform', name=rig_name.RigName(
+                                                        control_type = 'bnd',
+                                                        rig_type='grp'))
+
+        cmds.parent(self.settings['Root']['start_joint'],self.skeleton_grp)
 
         self.global_control = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='main',
