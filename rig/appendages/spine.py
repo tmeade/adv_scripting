@@ -156,6 +156,7 @@ class Spine(appendage.Appendage):
         return
 
     def build(self):
+        
 
         dv_prefix = 'driver_'
         fk_prefix = 'fk_follow_'
@@ -174,13 +175,30 @@ class Spine(appendage.Appendage):
 
         self.spine_dv_ls = []
         self.spine_fk_ls = []
+        
+        fk_ctrl_grp = rig_name.RigName(side=None,
+                                          element=self.appendage_name,
+                                          control_type='fk',
+                                          rig_type='ctrl',
+                                          maya_type='transform').output()
+        self.fk_ctrl_grp = cmds.createNode('transform', n=fk_ctrl_grp)
+        matrix_tools.snap_offset_parent_matrix(self.fk_ctrl_grp, follow_spine_joints_list[0])
+        
+        dv_ctrl_grp = rig_name.RigName(side=None,
+                                  element=self.appendage_name,
+                                  control_type='driver',
+                                  rig_type='ctrl',
+                                  maya_type='transform').output()
+        self.dv_ctrl_grp = cmds.createNode('transform', n=dv_ctrl_grp)
+        matrix_tools.snap_offset_parent_matrix(self.fk_ctrl_grp, dv_spine_joints_list[0])
+        
 
         for i, joint in enumerate(dv_spine_joints_list):
-            self.dv_spine_transform = utils.create_fk_control(dv_spine_joints_list[i], parent_control=self.controls_grp)
+            self.dv_spine_transform = utils.create_fk_control(dv_spine_joints_list[i], parent_control=self.dv_ctrl_grp)
             self.spine_dv_ls.append(self.dv_spine_transform)
 
         for i, joint in enumerate(spine_joints_list):
-            self.fk_spine_transform = utils.create_fk_control(spine_joints_list[i], parent_control=self.controls_grp)
+            self.fk_spine_transform = utils.create_fk_control(spine_joints_list[i], parent_control=self.fk_ctrl_grp)
             self.spine_fk_ls.append(self.fk_spine_transform)
 
         for btrans, ijoint in zip(self.spine_fk_ls, follow_spine_joints_list):
@@ -192,8 +210,7 @@ class Spine(appendage.Appendage):
 
 
     def cleanup(self):
-        # Implement cleanup method here
-        pass
+        cmds.parent(self.dv_ctrl_grp, self.fk_ctrl_grp, self.controls_grp)
 
     def connect_inputs(self):
         # Implement connect_inputs method here
@@ -209,4 +226,4 @@ class Spine(appendage.Appendage):
 
 
 # Maya Test
-#spine = Spine("spine", "spine_bnd_jnt_01")
+spine = Spine("spine", "spine_bnd_jnt_01")
