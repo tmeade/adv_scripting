@@ -18,7 +18,9 @@ class BipedSettings():
         leg_num_upperTwist_joints = 1,
         leg_num_lowerTwist_joints = 1,
         hand_appendage_name = 'hand',
-        hand_start_joint = 'lt_wrist_bnd_jnt'
+        hand_start_joint = 'lt_wrist_bnd_jnt',
+        hand_num_upperTwist_joint = 0,
+        hand_num_lowerTwist_joint = 0
         ):
 
         self.asset_name = asset_name
@@ -40,3 +42,5 @@ class BipedSettings():
         self.leg_num_lowerTwist_joints = leg_num_lowerTwist_joints
         self.hand_appendage_name = hand_appendage_name
         self.hand_start_joint = hand_start_joint
+        self.hand_num_upperTwist_joint = hand_num_upperTwist_joint
+        self.hand_num_lowerTwist_joint = hand_num_lowerTwist_joint

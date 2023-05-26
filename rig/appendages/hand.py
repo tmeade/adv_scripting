@@ -398,7 +398,6 @@ class Hand(appendage.Appendage):
         # Build hand bnd control
         if self.wrist_bnd != self.hand_bnd:
             hand_ctrl = utils.create_group(self.hand_bnd, wrist_ctrl, rig_type='ctrl')
-            utils.display_color(hand_ctrl, 15) # Blue display color
             self.fk_ctrl[self.hand_bnd] = hand_ctrl
         else:
             hand_ctrl = wrist_ctrl
@@ -435,12 +434,12 @@ class Hand(appendage.Appendage):
             if self.BUILD_CONTROLS:
                 ctrlfk1 = utils.create_control(branch[1], ctrlfk0, branch_ctrl_sz)
                 ctrlfk2 = utils.create_control(branch[2], ctrlfk1, branch_ctrl_sz)
+                utils.display_color(ctrlfk0, 15) # Blue display color
+                utils.display_color(ctrlfk1, 15)
+                utils.display_color(ctrlfk2, 15)
             else:
                 ctrlfk1 = utils.create_group(branch[1], ctrlfk0, rig_type='ctrl')
                 ctrlfk2 = utils.create_group(branch[2], ctrlfk1, rig_type='ctrl')
-            utils.display_color(ctrlfk0, 15) # Blue display color
-            utils.display_color(ctrlfk1, 15)
-            utils.display_color(ctrlfk2, 15)
             self.fk_ctrl[branch[0]] = ctrlfk0
             self.fk_ctrl[branch[1]] = ctrlfk1
             self.fk_ctrl[branch[2]] = ctrlfk2
@@ -464,18 +463,24 @@ class Hand(appendage.Appendage):
         if self.thumb_bnd:
             thumb_ik = rig_name.RigName(self.thumb_bnd).rename(control_type='ik').output()
         for branch in self.skeleton_ik:
-            name_ik = rig_name.RigName(branch[2]).rename(control_type='ik', rig_type='ctrl').remove(position=1).output()
+            if self.BUILD_CONTROLS:
+                name_ik = rig_name.RigName(branch[2]).rename(
+                    control_type='ik', rig_type='ctrl').remove(position=1).output()
+            else:
+                name_ik = rig_name.RigName(branch[2]).rename(
+                    control_type='ik', rig_type='ctrl', maya_type='transform').remove(position=1).output()
             if branch[0] == thumb_ik:
                 if self.BUILD_CONTROLS:
                     ctrlik = utils.create_control(branch[2], wrist_ctrl, branch_ctrl_sz, name_ik)
+                    utils.display_color(ctrlik, 10) # Peach display color
                 else:
                     ctrlik = utils.create_group(branch[2], wrist_ctrl, name_ik)
             else:
                 if self.BUILD_CONTROLS:
                     ctrlik = utils.create_control(branch[2], ik_ctrl_grp, branch_ctrl_sz, name_ik)
+                    utils.display_color(ctrlik, 10) # Peach display color
                 else:
                     ctrlik = utils.create_group(branch[2], ik_ctrl_grp, name_ik)
-            utils.display_color(ctrlik, 10) # Peach display color
             self.ik_ctrl[branch[2]] = ctrlik
 
         self.build_ik()
@@ -521,11 +526,12 @@ class Hand(appendage.Appendage):
             matrix_tools.matrix_parent_constraint(ik_ctrl, ik_handle)
             # Pole vector
             pv_pos = pole_vector.calculate_pole_vector_position(ik0, ik1, ik2)
-            name_pv = rig_name.RigName(ik_ctrl).rename(rig_type='pv', maya_type='controller')
+            name_pv = rig_name.RigName(ik_ctrl).rename(rig_type='pv', maya_type='controller').output()
             if self.BUILD_CONTROLS:
-                pv_ctrl = utils.create_control_pv(pv_pos, name_pv.output(), ik_handle, self.pv_ctrl_grp, pv_ctrl_sz)
+                pv_ctrl = utils.create_control_pv(pv_pos, name_pv, parent=self.pv_ctrl_grp, size=pv_ctrl_sz)
             else:
-                pv_ctrl = utils.create_group_pv(pv_pos, name_pv.output(), ik_handle, self.pv_ctrl_grp)
+                pv_ctrl = utils.create_group_pv(pv_pos, name_pv, parent=self.pv_ctrl_grp)
+            cmds.poleVectorConstraint(pv_ctrl, ik_handle)
             self.pv_ctrl[ik_ctrl] = pv_ctrl
 
             # Name each blend node based on name of FK joint
@@ -566,7 +572,7 @@ class Hand(appendage.Appendage):
             matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', wrist_ctrl)
 
         # Connect wrist/hand ctrl to respective bnd joints
-        matrix_tools.matrix_parent_constraint(wrist_ctrl, self.wrist_bnd)
+        #matrix_tools.matrix_parent_constraint(wrist_ctrl, self.wrist_bnd)
         if self.wrist_bnd != self.hand_bnd:
             hand_ctrl = self.fk_ctrl[self.hand_bnd]
             matrix_tools.matrix_parent_constraint(hand_ctrl, self.hand_bnd)

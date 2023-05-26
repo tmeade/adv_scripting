@@ -61,7 +61,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -101,7 +101,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -134,7 +134,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -180,7 +180,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -213,7 +213,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -259,7 +259,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -292,7 +292,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -325,7 +325,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -371,7 +371,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -404,7 +404,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -437,7 +437,7 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -467,6 +467,12 @@
           <layout class="QHBoxLayout" name="horizontalLayout_19">
            <item>
             <widget class="QLabel" name="label_19">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
              <property name="text">
               <string>Start Joint: </string>
              </property>
@@ -483,7 +489,73 @@
              <property name="minimumSize">
               <size>
                <width>250</width>
-               <height>0</height>
+               <height>10</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>300</width>
+               <height>16777215</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Number of upper Twist Joints:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="hand_num_up_joints_LE">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>250</width>
+               <height>10</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>300</width>
+               <height>16777215</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Number of lower Twist Joints:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="hand_num_low_joints_LE">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>250</width>
+               <height>10</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -556,7 +628,7 @@
      <x>0</x>
      <y>0</y>
      <width>503</width>
-     <height>24</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

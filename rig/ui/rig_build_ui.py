@@ -64,6 +64,8 @@ class RigBuildUI(QtWidgets.QDialog):
             self.ui.leg_num_up_joints_LE.setText(str(self.rig_data.leg_num_upperTwist_joints))
             self.ui.leg_num_low_joints_LE.setText(str(self.rig_data.leg_num_lowerTwist_joints))
             self.ui.hand_start_joint_LE.setText(self.rig_data.hand_start_joint)
+            self.ui.hand_num_up_joints_LE.setText(str(self.rig_data.hand_num_upperTwist_joint))
+            self.ui.hand_num_low_joints_LE.setText(str(self.rig_data.hand_num_lowerTwist_joint))
 
 
     def slot_build_clicked(self):
