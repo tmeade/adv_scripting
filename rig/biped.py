@@ -113,7 +113,7 @@ class Biped(Rig):
                                 unlock=True)
 
     def build_spine(self):
-        logger.debug('build_root')
+        logger.debug('build_spine')
         self.spine = spine.Spine(self.settings.spine_appendage_name,
                                  rig_name.RigName(full_name=self.settings.spine_start_joint).output(),
                                  input_matrix= self.root.controls['fk']['root'] + ".worldMatrix[0]")
