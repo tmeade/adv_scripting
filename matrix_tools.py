@@ -1,8 +1,7 @@
 import logging
 import maya.api.OpenMaya as om
 import maya.cmds as mc
-import adv_scripting.rig_name as rn
-import rig_name
+import adv_scripting.rig_name as rig_name
 
 logger = logging.getLogger(__name__)
 

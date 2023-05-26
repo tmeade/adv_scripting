@@ -94,7 +94,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 					                                                    rig_name.ControlType('ik'),
 					                                                    0,
 																		0)
-		
+
 
 
 	def build_fk_foot(self):
@@ -150,24 +150,24 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		cmds.parent(self.ball_ik_handle, self.toe_ik_control)
 
 		# TODO: Use self.ik_controls to get the ankleIK handle and parent it here.
-		
+
 		cmds.parent(self.toe_ik_control, self.controls_grp)
 		cmds.parent(self.fk_foot_skeleton[0], self.controls_grp)
 		cmds.parent(self.ik_foot_skeleton[0], self.toe_ik_control)
 
 
 
-		self.leg_ik_handle = cmds.listRelatives(self.bnd_joints['end_joint'],
-		                                                    self.toeEnd_joint,
-		                                                    rig_name.ControlType('controls'),
-		                                                    0,
-															0)
-
-		cmds.pointConstraint(self.ik_foot_skeleton[0], self.ik_leg_handle)
+		# self.leg_ik_handle = cmds.listRelatives(self.bnd_joints['end_joint'],
+		#                                                     self.toeEnd_joint,
+		#                                                     rig_name.ControlType('controls'),
+		#                                                     0,
+		# 													0)
+		#
+		# cmds.pointConstraint(self.ik_foot_skeleton[0], self.ik_leg_handle)
 		#how to call lef ik handle from twobone fk ik...
 
-		
-		
+
+
 
 
 
