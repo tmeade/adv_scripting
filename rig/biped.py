@@ -9,6 +9,7 @@ import adv_scripting.rig.appendages.arm as arm
 import adv_scripting.rig.appendages.hand as hand
 import adv_scripting.rig.settings as rig_settings
 import adv_scripting.utilities as utils
+import adv_scripting.matrix_tools as matrix_tools
 import importlib as il
 il.reload(root)
 il.reload(spine)
@@ -25,9 +26,7 @@ def tag_rig_node(rig_grp, name):
     cmds.addAttr(rig_grp, longName='AssetName', dt='string')
     cmds.addAttr(rig_grp, longName='RigVersion', dt='string')
 
-
 class Rig():
-
     def __init__(self, name, settings):
         self.name = name
         self.settings = settings
@@ -46,9 +45,11 @@ class Rig():
                                                         rig_type='grp'))
         tag_rig_node(self.rig_grp, self.name)
 
+        # TODO: add skelton grp
         self.skeleton_grp = cmds.createNode('transform', name=rig_name.RigName(
                                                         control_type = 'bnd',
                                                         rig_type='grp'))
+
         cmds.parent(self.settings.root_start_joint, self.skeleton_grp)
 
         self.global_control = cmds.createNode('transform', name=rig_name.RigName(
@@ -60,11 +61,28 @@ class Rig():
         logger.debug('build')
 
     def connect_control_shapes(self):
+        
+        # Temporary_grp
+        self.shape_grp = rig_name.RigName(side=None,
+                                    element="shape",
+                                    control_type=None,
+                                    rig_type='grp',
+                                    maya_type='transform').output()
+        self.shape_grp = cmds.createNode('transform', n="shape_grp")
+        
+        self_ctrl_list = cmds.ls(type='transform')
+        self_ctrl_list = [ctrl for ctrl in self_ctrl_list if '_ctrl_transform' in ctrl]
+        for i in range(len(self_ctrl_list)):
+            self.controller_shape = cmds.circle(normal=(0, 1, 0), sweep=360, radius=20, degree=3,
+                                              useTolerance=False,
+                                              tolerance=0, constructionHistory=False, name=self_ctrl_list[i] + "_shape")[0]
+            matrix_tools.snap_offset_parent_matrix(self.controller_shape, self_ctrl_list[i])
+            # Temporary_parent
+            cmds.parent(self.controller_shape,self.shape_grp)
         logger.debug('connect_control_shapes')
 
 
 class Biped(Rig):
-
     def __init__(self, name, settings=rig_settings.BipedSettings()):
         self.sides = [rig_name.Side('lt'), rig_name.Side('rt')]
         Rig.__init__(self, name, settings)
@@ -76,28 +94,6 @@ class Biped(Rig):
         self.build_head()
         self.build_arms()
         self.build_legs()
-
-    def connect_control_shapes(self):
-        # Add controls as message connections to rig_grp
-        controls = self.get_controls()
-        for control in controls:
-            cmds.addAttr(self.rig_grp, ln=control, at='message')
-            cmds.connectAttr(f'{control}.message', f'{self.rig_grp}.{control}')
-
-    def get_controls(self):
-        # Get controls from all appendages
-        appendages = [self.root, self.spine, self.head,
-            self.arms[self.sides[0]], self.arms[self.sides[1]],
-            self.legs[self.sides[0]], self.legs[self.sides[1]],
-            self.hands[self.sides[0]], self.hands[self.sides[1]]]
-
-        controls = list()
-        for appendage in appendages:
-            control_dict = appendage.controls
-            controls.expand(control_dict['fk'].values())
-            controls.expand(control_dict['ik'].values())
-            controls.expand(control_dict['switches'].values())
-        return controls
 
     def build_root(self):
         logger.debug('build_root')

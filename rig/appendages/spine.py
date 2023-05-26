@@ -201,7 +201,7 @@ class Spine(appendage.Appendage):
         fk_ctrls = rig_name.RigName(side=None,
                                     element=self.appendage_name,
                                     control_type='fk',
-                                    rig_type='ctrl',
+                                    rig_type='grp',
                                     maya_type='transform').output()
         self.fk_ctrls = cmds.createNode('transform', n=fk_ctrls)
         matrix_tools.snap_offset_parent_matrix(self.fk_ctrls, follow_spine_joints_list[0])
@@ -209,7 +209,7 @@ class Spine(appendage.Appendage):
         dv_ctrls = rig_name.RigName(side=None,
                                     element=self.appendage_name,
                                     control_type='driver',
-                                    rig_type='ctrl',
+                                    rig_type='grp',
                                     maya_type='transform').output()
         self.dv_ctrls = cmds.createNode('transform', n=dv_ctrls)
         matrix_tools.snap_offset_parent_matrix(self.dv_ctrls, dv_spine_joints_list[0])
