@@ -190,7 +190,7 @@ class Spine(appendage.Appendage):
                                   rig_type='ctrl',
                                   maya_type='transform').output()
         self.dv_ctrl_grp = cmds.createNode('transform', n=dv_ctrl_grp)
-        matrix_tools.snap_offset_parent_matrix(self.fk_ctrl_grp, dv_spine_joints_list[0])
+        matrix_tools.snap_offset_parent_matrix(self.dv_ctrl_grp, dv_spine_joints_list[0])
         
 
         for i, joint in enumerate(dv_spine_joints_list):
@@ -217,7 +217,7 @@ class Spine(appendage.Appendage):
 
         if self.input_matrix:
             matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix',
-                                                  'driver_spine_bnd_jnt_01_fk_ctrl_transform')
+                                                  self.dv_ctrl_grp)
 
     def connect_outputs(self):
         # Implement connect_outputs method here
