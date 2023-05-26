@@ -188,10 +188,6 @@ class Hand(appendage.Appendage):
         for branch in self.skeleton_ik:
             logger.debug(f'\t{branch}')
 
-        # Change display color for fk,ik skeleton
-        utils.display_color(wrist_fk, 6) # Blue IK skeleton
-        utils.display_color(wrist_ik, 8) # Burple IK skeleton
-
         # Create FK joint group
         fk_jnt_grp = rig_name.RigName(side=self.side,
                                           element=self.appendage_name,
@@ -215,7 +211,7 @@ class Hand(appendage.Appendage):
             cmds.parent(branch[0], fk_jnt_grp)
         for branch in self.skeleton_ik:
             cmds.parent(branch[0], ik_jnt_grp)
-        # Remove wrist and hand joints from fk,ik skeleton
+        # Delete unused duplicate joints
         cmds.delete(wrist_fk)
         cmds.delete(wrist_ik)
 
@@ -237,28 +233,25 @@ class Hand(appendage.Appendage):
         num_upperTwist_joint (int/None): number of upperTwist joints
         num_lowerTwist_joint (int/None): number of lowerTwist joints
 
-        Returns list [start, middle, end] joints.
+        Returns first joint of skeleton copy and skeleton rename list.
         '''
         # Duplicate the skeleton and parent it to the world
         skeleton = utils.duplicate_skeleton(start_joint, tag='COPY')
         cmds.parent(skeleton, w=True)
 
         # Rename joint skeleton by replacing 'bnd' with the control_type
-        joint_map = utils.replace_hierarchy(skeleton, control_type=control_type, rig_type='jnt', tag='COPY')
-        #joint_map = list(joint_map.items())
+        skeleton_copy = utils.replace_hierarchy(skeleton, control_type=control_type, rig_type='jnt', tag='COPY')
+        skeleton_copy = list(skeleton_copy.keys())
 
-        # Rename wrist joint to control_type
-        start_copy = rig_name.RigName(start_joint).rename(control_type=control_type).output()
-
-        skeleton_copy = copy.deepcopy(bnd_jnt)
+        skeleton_rename = copy.deepcopy(bnd_jnt)
         # Duplicate skeleton_hand and rename to control_type
-        for branch in skeleton_copy:
+        for branch in skeleton_rename:
             for idx in range(len(branch)):
                 jnt_rn = rig_name.RigName(branch[idx])
                 jnt_rn.rename(control_type=control_type)
                 branch[idx] = jnt_rn.output()
 
-        return start_copy, skeleton_copy
+        return skeleton_copy[0], skeleton_rename
 
 
     def read_skeleton(self, joint):
