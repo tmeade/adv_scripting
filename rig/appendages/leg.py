@@ -68,7 +68,6 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 			logging.error(f'{self.ball_joint} joint has no children.')
 			return
 
-		print ('OUT_LEG: ', self.output)
 		cmds.addAttr(self.output, longName='ball_matrix', attributeType='matrix')
 
 		# WARNING: Begin hack.  Running the code without creating the skeleton and deleting it
@@ -107,7 +106,12 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 	def build_ik_foot(self):
 		logger.debug('build_ik_foot')
 
-		self.ik_foot_skeleton
+		# self.name_foot_ik_control = rig_name.RigName(element='foot',
+		# 									side=self.side,
+        #     								control_type='ik',
+        #     								rig_type='ctrl',
+        #     								maya_type='transform')
+
 		name_ball_ik_handle = rig_name.RigName(element='ball',
 											side=self.side,
         									control_type='ik',
@@ -148,12 +152,19 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		cmds.parent(self.ball_ik_control, self.toe_ik_control)
 		cmds.parent(self.toe_ik_handle, self.toe_ik_control)
 		cmds.parent(self.ball_ik_handle, self.toe_ik_control)
+		cmds.parent(self.toe_ik_control, self.ik_controls[0])
+
+		print ('self.ik_skeleton:', self.ik_skeleton)
+		print ('self.ik_controls:', self.ik_controls)
+		leg_ik_handle = cmds.listRelatives(self.ik_controls[0])
+		print ('leg_ik_handle', leg_ik_handle[0])
+		cmds.parent(leg_ik_handle[0], self.ball_ik_control)
+
+
 
 		# TODO: Use self.ik_controls to get the ankleIK handle and parent it here.
 
-		cmds.parent(self.toe_ik_control, self.controls_grp)
-		cmds.parent(self.fk_foot_skeleton[0], self.controls_grp)
-		cmds.parent(self.ik_foot_skeleton[0], self.toe_ik_control)
+
 
 
 
@@ -163,7 +174,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		#                                                     0,
 		# 													0)
 		#
-		# cmds.pointConstraint(self.ik_foot_skeleton[0], self.ik_leg_handle)
+		cmds.pointConstraint(self.ik_skeleton[-1], self.ik_foot_skeleton[0])
 		#how to call lef ik handle from twobone fk ik...
 
 
@@ -188,15 +199,21 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 	def cleanup_leg(self):
 		logger.debug('cleanup_leg')
 
-'''
-	def connect_inputs(self):
+		cmds.parent(self.toe_ik_control, self.controls_grp)
+		cmds.parent(self.fk_foot_skeleton[0], self.controls_grp)
+		cmds.parent(self.ik_foot_skeleton[0], self.toe_ik_control)
 
-        if self.input_matrix:
-            matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.leg_ctrl)
+
+	def connect_inputs(self):
+		logger.debug('connect_inputs')
+		# if self.input_matrix:
+		# 	matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', f'{self.fk_controls[0]}')
+		# 	matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', f'{self.ik_skeleton[0]}')
+
 
 		#cmds.parent(self.fk_foot_skeleton, self.input_grp)
 		#cmds.parent(self.ik_foot_skeleton, self.input_grp)
-'''
+
 '''
 import adv_scripting.rig.appendages.leg as leg
 il.reload(leg)

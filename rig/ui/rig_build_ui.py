@@ -5,7 +5,9 @@ import shiboken2
 import logging
 logger = logging.getLogger(__name__)
 
-import adv_scripting.rig.main as main
+import adv_scripting.rig.biped as biped
+import importlib as il
+il.reload(biped)
 
 try:
     from maya import OpenMayaUI as omui
@@ -68,7 +70,7 @@ class RigBuildUI(QtWidgets.QDialog):
 
     def slot_build_clicked(self):
         print (self.rig_data)
-        main.build_biped(self.rig_data)
+        biped.build_biped(self.rig_data)
 
     def slot_close(self):
         self.close()

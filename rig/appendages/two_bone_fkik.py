@@ -74,7 +74,6 @@ class TwoBoneFKIK(appendage.Appendage):
                                                                 self.num_lowerTwist_joints)
 
         # Add a matrix attribute to represent each bnd joint on the output node
-        print ('OUT_TWOBONE: ', self.output)
         for joint_name in self.bnd_joints.keys():
             cmds.addAttr(self.output, longName=f'{joint_name}_matrix', attributeType='matrix')
 
@@ -83,8 +82,7 @@ class TwoBoneFKIK(appendage.Appendage):
         self.fk_controls = fk_setup(self.fk_skeleton)
 
         #IK setup
-        print (self.rotate_axis)
-        self.ik_controls = ik_setup(self.ik_skeleton ,self.rotate_axis, self.control_to_local_orient)
+        self.ik_controls = ik_setup(self.ik_skeleton, self.rotate_axis, self.control_to_local_orient)
 
         # Create blended output
          #TODO : twist joint blending
