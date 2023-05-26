@@ -176,23 +176,24 @@ class Spine(rap.Appendage):
         dv_spine_joints_list = [joint for joint in dv_spine_joints_list if not fk_prefix in joint]
         dv_spine_joints_list = [joint for joint in dv_spine_joints_list if dv_prefix in joint]
 
-        spine_ik_ls = []
-        spine_fk_ls = []
+        self.spine_ik_ls = []
+        self.spine_fk_ls = []
 
         for i, joint in enumerate(dv_spine_joints_list):
             self.ik_spine_transform = utils.create_fk_control(dv_spine_joints_list[i],parent_control=self.controls_grp)
-            spine_ik_ls.append(self.ik_spine_transform)
+            self.spine_ik_ls.append(self.ik_spine_transform)
 
         for i, joint in enumerate(spine_joints_list):
             self.fk_spine_transform = utils.create_fk_control(spine_joints_list[i],parent_control=self.controls_grp)
-            spine_fk_ls.append(self.fk_spine_transform)
+            self.spine_fk_ls.append(self.fk_spine_transform)
 
-        for btrans, ijoint in zip(spine_fk_ls, ik_spine_joints_list):
+        for btrans, ijoint in zip(self.spine_fk_ls, ik_spine_joints_list):
             mt.matrix_parent_constraint(ijoint, btrans)
 
-        for i in range(len(spine_ik_ls)):
-            if i+1 < len(spine_ik_ls):
-                cmds.parent(spine_ik_ls[i+1], spine_ik_ls[i])
+        for i in range(len(self.spine_ik_ls)):
+            if i+1 < len(self.spine_ik_ls):
+                cmds.parent(self.spine_ik_ls[i+1], self.spine_ik_ls[i])
+        print(self.spine_fk_ls[-1])
 
 
 
@@ -201,12 +202,16 @@ class Spine(rap.Appendage):
         pass
 
     def connect_inputs(self):
-        # Implement connect_outputs method here
-        pass
+        # Implement connect_inputs method here
+
+        if self.input_matrix:
+            mt.matrix_parent_constraint(f'{self.input}.input_matrix', self.spine_fk_ls[-1])
+
 
     def connect_outputs(self):
         # Implement connect_outputs method here
+        # Connect the start matrix on the output node to the skeleton
         pass
 
 # Maya Test
-# spine = Spine("spine", "spine_bnd_jnt_01")
+#spine = Spine("spine", "spine_bnd_jnt_01")
