@@ -317,10 +317,10 @@ def create_control(node, parent=None, size=1, name=None):
     '''
     #logger.debug(f"node:'{node}', parent:'{parent}', size:'{size}', name:'{name}'")
     if name:
-        ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=name)[0]
+        ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), ch=False, r=size, n=name)[0]
     else:
         ctrl_rn = rig_name.RigName(node).rename(rig_type='ctrl')
-        ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), r=size, n=ctrl_rn.output())[0]
+        ctrl = cmds.circle(nr=(1,0,0), c=(0,0,0), ch=False, r=size, n=ctrl_rn.output())[0]
     logger.debug(ctrl)
     if parent:
         cmds.parent(ctrl, parent, a=True)
@@ -353,14 +353,15 @@ def create_group(node, parent=None, name=None, rig_type='grp'):
     matrix_tools.snap_offset_parent_matrix(grp, node)
     return grp
 
-def create_control_pv(pv_pos, pv_name, ik_handle, parent=None, size=1):
+def create_control_pv(pv_pos, pv_name, parent=None, size=1):
     '''
-    Build a nurbs circle control at position of node.
-    Size determines circle's radius. Move control under parent if provided.
+    Build a nurbs control at position of node.
+    Size determines control's size. Move control under parent if provided.
 
     Arguments:
     pos (float tuple): (x,y,z) position of pole vector
-    parent (str): parent of control, if any
+    pv_name (str): name of pv control
+    parent (str): parent of pv control, if any
     size (str): control radius
 
     Returns name of created control.
@@ -380,24 +381,27 @@ def create_control_pv(pv_pos, pv_name, ik_handle, parent=None, size=1):
         cmds.matchTransform(pv_ctrl, parent, pos=1, rot=1, scl=1, piv=1)
         # freeze transformations
         cmds.makeIdentity(pv_ctrl, apply=True, t=1, r=1, s=1, n=0)
-    # move pv_ctrl to absolute position
-    cmds.move(pv_pos.x, pv_pos.y, pv_pos.z, pv_ctrl, a=True)
-    # transfer values to offsetParentMatrix
-    transform_mat = om.MMatrix(cmds.xform(pv_ctrl, q=True, m=True, ws=False))
-    cmds.setAttr(f'{pv_ctrl}.offsetParentMatrix', transform_mat, typ='matrix')
-    make_identity(pv_ctrl)
-    cmds.poleVectorConstraint(pv_ctrl, ik_handle)
+
+    if isinstance(pv_pos, str): # pv_pos is node name
+        matrix_tools.snap_offset_parent_matrix(pv_ctrl, pv_pos)
+    else: # pv_pos is coordinates
+        # move pv_ctrl to absolute position
+        cmds.move(pv_pos.x, pv_pos.y, pv_pos.z, pv_ctrl, a=True)
+        # transfer values to offsetParentMatrix
+        transform_mat = om.MMatrix(cmds.xform(pv_ctrl, q=True, m=True, ws=False))
+        cmds.setAttr(f'{pv_ctrl}.offsetParentMatrix', transform_mat, typ='matrix')
+        make_identity(pv_ctrl)
     return pv_ctrl
 
-def create_group_pv(pv_pos, pv_name, ik_handle, parent=None):
+def create_group_pv(pv_pos, pv_name, parent=None):
     '''
     Build an empty group at position of node.
-    Size determines circle's radius. Move control under parent if provided.
+    Move control under parent if provided.
 
     Arguments:
     pos (float tuple): (x,y,z) position of pole vector
-    parent (str): parent of control, if any
-    size (str): control radius
+    pv_name (str): name of pv control
+    parent (str): parent of pv control, if any
 
     Returns name of created control.
     '''
@@ -412,13 +416,16 @@ def create_group_pv(pv_pos, pv_name, ik_handle, parent=None):
         cmds.matchTransform(pv_ctrl, parent, pos=1, rot=1, scl=1, piv=1)
         # freeze transformations
         cmds.makeIdentity(pv_ctrl, apply=True, t=1, r=1, s=1, n=0)
-    # move pv_ctrl to absolute position
-    cmds.move(pv_pos.x, pv_pos.y, pv_pos.z, pv_ctrl, a=True)
-    # transfer values to offsetParentMatrix
-    transform_mat = om.MMatrix(cmds.xform(pv_ctrl, q=True, m=True, ws=False))
-    cmds.setAttr(f'{pv_ctrl}.offsetParentMatrix', transform_mat, typ='matrix')
-    make_identity(pv_ctrl)
-    cmds.poleVectorConstraint(pv_ctrl, ik_handle)
+
+    if isinstance(pv_pos, str): # pv_pos is node name
+        matrix_tools.snap_offset_parent_matrix(pv_ctrl, pv_pos)
+    else: # pv_pos is coordinates
+        # move pv_ctrl to absolute position
+        cmds.move(pv_pos.x, pv_pos.y, pv_pos.z, pv_ctrl, a=True)
+        # transfer values to offsetParentMatrix
+        transform_mat = om.MMatrix(cmds.xform(pv_ctrl, q=True, m=True, ws=False))
+        cmds.setAttr(f'{pv_ctrl}.offsetParentMatrix', transform_mat, typ='matrix')
+        make_identity(pv_ctrl)
     return pv_ctrl
 
 def create_control_copy(control, node, parent=None, size=1):
@@ -721,9 +728,9 @@ def read_rotate(node, os=0):
 
 def read_scale(node, os=0):
     if os:
-        return cmds.xform(node, q=1, s=1, os=1) # object space
+        return cmds.xform(node, q=1, s=1, r=1, os=1) # object space
     else:
-        return cmds.xform(node, q=1, s=1, ws=1) # world space
+        return cmds.xform(node, q=1, s=1, r=1, ws=1) # world space
 
 def read_joint_orient(node):
     if cmds.objectType(node, isType='joint'):

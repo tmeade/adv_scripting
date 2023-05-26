@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 import importlib as il
 il.reload(rig_build_ui)
 il.reload(settings)
+il.reload(biped)
 
 
 def show_rig_build_window(rig_data):

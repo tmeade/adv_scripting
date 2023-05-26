@@ -9,6 +9,7 @@ import adv_scripting.rig.appendages.arm as arm
 import adv_scripting.rig.appendages.hand as hand
 import adv_scripting.rig.settings as rig_settings
 import adv_scripting.utilities as utils
+import adv_scripting.matrix_tools as matrix_tools
 import importlib as il
 il.reload(root)
 il.reload(spine)
@@ -44,17 +45,21 @@ class Rig():
                                                         rig_type='grp'))
         tag_rig_node(self.rig_grp, self.name)
 
-        # TODO: add skelton grp
         self.skeleton_grp = cmds.createNode('transform', name=rig_name.RigName(
-                                                        control_type = 'bnd',
+                                                        element='skeleton',
                                                         rig_type='grp'))
-
         cmds.parent(self.settings.root_start_joint, self.skeleton_grp)
+        cmds.parent(self.skeleton_grp, self.rig_grp)
+
+        self.controls_grp = cmds.createNode('transform', name=rig_name.RigName(
+                                                        element='controls',
+                                                        rig_type='grp'))
+        cmds.parent(self.controls_grp, self.rig_grp)
 
         self.global_control = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='main',
                                                         rig_type='ctrl'))
-        cmds.parent(self.global_control, self.rig_grp)
+        cmds.parent(self.global_control, self.controls_grp)
 
     def build(self):
         logger.debug('build')
@@ -75,6 +80,73 @@ class Biped(Rig):
         self.build_head()
         self.build_arms()
         self.build_legs()
+        self.build_hands()
+
+    def connect_control_shapes(self):
+        # List all appendages
+        appendages = [self.root, self.spine, self.head,
+            self.arms[self.sides[0]], self.arms[self.sides[1]],
+            self.legs[self.sides[0]], self.legs[self.sides[1]],
+            self.hands[self.sides[0]], self.hands[self.sides[1]]]
+
+        # List of all controls
+        controls = list()
+
+        for appendage in appendages:
+            logger.debug(appendage.appendage_name)
+            fk_controls = list()
+            ik_controls = list()
+            switch_controls = list()
+            if 'fk' in appendage.controls:
+                fk_controls = appendage.controls['fk'].items()
+            if 'ik' in appendage.controls:
+                ik_controls = appendage.controls['ik'].items()
+            if 'switch' in appendage.controls:
+                switch_controls = appendage.controls['switch'].items()
+
+            for label, ctrl in fk_controls: # FK Controls
+                controls.append(ctrl)
+                ctrlname = rig_name.RigName(ctrl).remove(maya_type=True).output()
+                ctrlfk = utils.create_control(ctrl, parent=self.global_control, size=1, name=ctrlname)
+                utils.display_color(ctrlfk, 15) # Blue display color
+            for label, ctrl in ik_controls: # IK Controls
+                controls.append(ctrl)
+                ctrlname = rig_name.RigName(ctrl).remove(maya_type=True).output()
+                if 'pv' in label: # PV Control
+                    ctrlik = utils.create_control_pv(ctrl, ctrlname, parent=self.global_control, size=1)
+                else:
+                    ctrlik = utils.create_control(ctrl, parent=self.global_control, size=1, name=ctrlname)
+                utils.display_color(ctrlik, 10) # Peach display color
+            for label, ctrl in switch_controls:
+                controls.append(ctrl)
+                ctrlname = rig_name.RigName(ctrl).remove(maya_type=True).output()
+                ctrlswitch = utils.create_control(ctrl, parent=self.global_control, size=1, name=ctrlname)
+                utils.display_color(ctrlswitch, 22) # Yellow display color
+
+        # Connect controls as message to top node rig_grp
+        for control in controls:
+            cmds.addAttr(self.rig_grp, ln=control, at='message')
+            cmds.connectAttr(f'{control}.message', f'{self.rig_grp}.{control}')
+
+        # self.shape_grp = rig_name.RigName(side=None,
+        #                             element="shape",
+        #                             control_type=None,
+        #                             rig_type='grp',
+        #                             maya_type='transform').output()
+        # self.shape_grp = cmds.createNode('transform', n="shape_grp")
+        #
+        # for
+        #     utilities.create_control(node, parent=None, size=1, name=None):
+        #
+        #self_ctrl_list = cmds.ls(type='transform')
+        #self_ctrl_list = [ctrl for ctrl in self_ctrl_list if '_ctrl_transform' in ctrl]
+        # for i in range(len(self_ctrl_list)):
+        #     self.controller_shape = cmds.circle(normal=(0, 1, 0), sweep=360, radius=20, degree=3,
+        #                                       useTolerance=False,
+        #                                       tolerance=0, constructionHistory=False, name=self_ctrl_list[i] + "_shape")[0]
+        #     matrix_tools.snap_offset_parent_matrix(self.controller_shape, self_ctrl_list[i])
+        #     # Temporary_parent
+        #     cmds.parent(self.controller_shape,self.shape_grp)
 
     def build_root(self):
         logger.debug('build_root')
