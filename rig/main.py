@@ -3,6 +3,7 @@ from PySide2 import QtCore
 
 import adv_scripting.rig.ui.rig_build_ui as rig_build_ui
 import adv_scripting.rig.settings as settings
+import adv_scripting.rig.biped as biped
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,14 @@ def show_rig_build_window(rig_data):
     window.show()
 
     return window
+
+def build_biped(rig_settings):
+    logging.info(f'Building {rig_settings.asset_name} rig......')
+
+    rig = biped.Biped(rig_settings.asset_name)
+    logging.info(f'Finished building rig: {rig}')
+
+
 
 def main():
     rig_data = None

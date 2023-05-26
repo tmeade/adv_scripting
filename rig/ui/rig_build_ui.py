@@ -5,7 +5,7 @@ import shiboken2
 import logging
 logger = logging.getLogger(__name__)
 
-import adv_scripting.rig
+import adv_scripting.rig.main as main
 
 try:
     from maya import OpenMayaUI as omui
@@ -50,6 +50,7 @@ class RigBuildUI(QtWidgets.QDialog):
         self.ui.build_BUT.clicked.connect(self.slot_build_clicked)
         self.ui.close_BUT.clicked.connect(self.slot_close)
 
+        # Set defaults
         if self.rig_data:
             self.ui.root_start_joint_LE.setText(self.rig_data.root_start_joint)
             self.ui.spine_start_joint_LE.setText(self.rig_data.spine_start_joint)
@@ -67,7 +68,7 @@ class RigBuildUI(QtWidgets.QDialog):
 
     def slot_build_clicked(self):
         print (self.rig_data)
-        #go_publish(self.publish_data)
+        main.build_biped(self.rig_data)
 
     def slot_close(self):
         self.close()
