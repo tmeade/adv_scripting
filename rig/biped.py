@@ -75,7 +75,7 @@ class Rig():
                                                         control_type = 'bnd',
                                                         rig_type='grp'))
 
-        cmds.parent(self.settings['Root']['start_joint'],self.skeleton_grp)
+        cmds.parent(self.settings.root_start_joint, self.skeleton_grp)
 
         self.global_control = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='main',
@@ -114,13 +114,15 @@ class Biped(Rig):
 
     def build_spine(self):
         logger.debug('build_root')
+        print ('***self.root.controls', self.root.controls['fk']['root'] + ".worldMatrix[0]")
         self.spine = spine.Spine(self.settings.spine_appendage_name,
                                  rig_name.RigName(full_name=self.settings.spine_start_joint).output(),
                                  input_matrix= self.root.controls['fk']['root'] + ".worldMatrix[0]")
+        cmds.parent(self.spine.appendage_grp, self.rig_grp)
 
     def build_head(self):
         logger.debug('build_head')
-        self.head = appendages.head.Head(self.settings.head.appendage_name,
+        self.head = head.Head(self.settings.head_appendage_name,
                                          rig_name.RigName(full_name=self.settings.head_start_joint).output(),
                                          self.settings.head_num_twist_joints,
                                          input_matrix=f'{self.global_control}.worldMatrix[0]')
@@ -134,15 +136,17 @@ class Biped(Rig):
                                       full_name=self.settings.arm_appendage_name).rename(
                                       side=side).output(),
                                     rig_name.RigName(
-                                      full_name=self.settings.arm.start_joint).rename(
+                                      full_name=self.settings.arm_start_joint).rename(
                                       side=side).output(),
-                                    self.settings.arm.num_upperTwist_joints,
+                                    self.settings.arm_num_upperTwist_joints,
                                     self.settings.arm_num_lowerTwist_joints,
                                     side)
             cmds.parent(self.arms[side].appendage_grp, self.rig_grp)
 
     def build_legs(self):
         logger.debug('build_legs')
+        print('IM******', f"{self.root.controls}['fk']['root'].worldMatrix[0]")
+
         self.legs = dict()
         for side in self.sides:
             self.legs[side] = leg.Leg(rig_name.RigName(
@@ -151,10 +155,11 @@ class Biped(Rig):
                                     rig_name.RigName(
                                         full_name=self.settings.leg_start_joint).rename(
                                         side=side).output(),
-                                    self.settings.leg.num_upperTwist_joint,
-                                    self.settings.leg.num_lowerTwist_joint,
+                                    self.settings.leg_num_upperTwist_joints,
+                                    self.settings.leg_num_lowerTwist_joints,
                                     side,
-                                    input_matrix = f"{self.root.controls}['fk']['root'].worldMatrix[0]")
+                                    input_matrix = self.root.controls['fk']['root'] + ".worldMatrix[0]")
+
             cmds.parent(self.legs[side].appendage_grp, self.rig_grp)
 
     def build_hands(self):

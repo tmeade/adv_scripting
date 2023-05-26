@@ -5,6 +5,8 @@ import shiboken2
 import logging
 logger = logging.getLogger(__name__)
 
+import adv_scripting.rig
+
 try:
     from maya import OpenMayaUI as omui
 except Exception as e:
