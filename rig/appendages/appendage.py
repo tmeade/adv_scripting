@@ -114,6 +114,6 @@ class Appendage(ABC):
         cmds.parent(self.controls_grp, self.appendage_grp)
         self.controls_grp = cmds.listRelatives(self.appendage_grp, f=True)[-1]
         cmds.parent(self.input, self.appendage_grp)
+        self.input = cmds.listRelatives(self.appendage_grp, f=True)[-1]
         cmds.parent(self.output, self.appendage_grp)
         self.output = cmds.listRelatives(self.appendage_grp, f=True)[-1]
-        print('OUTPUT****: ', self.output)

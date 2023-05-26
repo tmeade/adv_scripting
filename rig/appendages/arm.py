@@ -59,7 +59,7 @@ class Arm(two_bone_fkik.TwoBoneFKIK):
 
         cmds.xform(self.clavicle_joint, ro = [0, 0, 0], os=True)
         cmds.setAttr(f'{self.clavicle_joint}.jointOrient', 0,0,0)
-        self.fk_controls.append(self.clavicle_control)
+        self.fk_controls['clavicle_ctrl'] = self.clavicle_control
 
     def connect_arm_output(self):
         cmds.connectAttr(f'{self.output}.clavicle_matrix', f'{self.clavicle_joint}.offsetParentMatrix')
@@ -67,8 +67,8 @@ class Arm(two_bone_fkik.TwoBoneFKIK):
 
     def cleanup_arm(self):
         cmds.parent(self.clavicle_control, self.controls_grp)
-        cmds.parent(self.fk_controls[0], self.clavicle_control)
-        matrix_tools.matrix_parent_constraint(self.clavicle_control, self.fk_controls[0])
+        cmds.parent(self.fk_controls['ctrl_0'], self.clavicle_control)
+        matrix_tools.matrix_parent_constraint(self.clavicle_control, self.fk_controls['ctrl_0'])
         matrix_tools.matrix_parent_constraint(self.clavicle_control, self.ik_skeleton[0][0])
         matrix_tools.matrix_parent_constraint(self.spine_joint, self.clavicle_control)
 

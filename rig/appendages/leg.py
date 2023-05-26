@@ -29,6 +29,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 					num_lowleg_joints,
 					side,
 					rotate_axis = 'rz',
+					axis_orient = -1,
                     control_to_local_orient=False,
 					input_matrix=None):
 
@@ -39,6 +40,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 											num_lowleg_joints,
 											side,
 											rotate_axis,
+											axis_orient,
                                             control_to_local_orient,
 											input_matrix)
 
@@ -48,8 +50,9 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		self.setup_foot()
 		self.build_fk_foot()
 		self.build_ik_foot()
-		# self.connect_leg_output()
-		# self.cleanup_leg()
+		self.connect_leg_output()
+		self.connect_foot_inputs()
+		self.cleanup_leg()
 
 	def setup_foot(self):
 		logger.debug('setup_leg')
@@ -68,7 +71,6 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 			logging.error(f'{self.ball_joint} joint has no children.')
 			return
 
-		print ('OUT_LEG: ', self.output)
 		cmds.addAttr(self.output, longName='ball_matrix', attributeType='matrix')
 
 		# WARNING: Begin hack.  Running the code without creating the skeleton and deleting it
@@ -95,19 +97,16 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 					                                                    0,
 																		0)
 
-
-
 	def build_fk_foot(self):
 		logger.debug('build_fk_foot')
 
 		# Create a control for the fk ball joint and parent that control to the leg's fk control
 		# hierarchy.
 		self.ball_ctrl = utils.create_fk_control(self.fk_foot_skeleton[1][1].output(),
-                                                 parent_control=self.fk_controls[-1])
+                                                 parent_control=self.fk_controls['ctrl_2'])
 	def build_ik_foot(self):
 		logger.debug('build_ik_foot')
 
-		self.ik_foot_skeleton
 		name_ball_ik_handle = rig_name.RigName(element='ball',
 											side=self.side,
         									control_type='ik',
@@ -148,29 +147,14 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		cmds.parent(self.ball_ik_control, self.toe_ik_control)
 		cmds.parent(self.toe_ik_handle, self.toe_ik_control)
 		cmds.parent(self.ball_ik_handle, self.toe_ik_control)
+		print ('self.ik_controls[0]', self.ik_controls['end_ctrl'])
+		#TODO: This does nto seem to be parenting
+		cmds.parent(self.toe_ik_control, self.ik_controls['end_ctrl'])
 
-		# TODO: Use self.ik_controls to get the ankleIK handle and parent it here.
+		leg_ik_handle = cmds.listRelatives(self.ik_controls['end_ctrl'])
+		cmds.parent(leg_ik_handle[0], self.ball_ik_control)
 
-		cmds.parent(self.toe_ik_control, self.controls_grp)
-		cmds.parent(self.fk_foot_skeleton[0], self.controls_grp)
-		cmds.parent(self.ik_foot_skeleton[0], self.toe_ik_control)
-
-
-
-		# self.leg_ik_handle = cmds.listRelatives(self.bnd_joints['end_joint'],
-		#                                                     self.toeEnd_joint,
-		#                                                     rig_name.ControlType('controls'),
-		#                                                     0,
-		# 													0)
-		#
-		# cmds.pointConstraint(self.ik_foot_skeleton[0], self.ik_leg_handle)
-		#how to call lef ik handle from twobone fk ik...
-
-
-
-
-
-
+		cmds.pointConstraint(self.ik_skeleton[-1], self.ik_foot_skeleton[0])
 
 	def create_blended_result(self):
 		'''
@@ -185,18 +169,21 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		cmds.connectAttr(f'{self.output}.ball_matrix', f'{self.ball_joint}.offsetParentMatrix')
 		matrix_tools.make_identity(self.ball_joint)
 
+	def connect_foot_inputs(self):
+		logger.debug('connect_inputs')
+		print ('self.input', self.input)
+		if self.input_matrix:
+			matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.fk_controls['ctrl_0'])
+			matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.ik_skeleton[0][0])
+
 	def cleanup_leg(self):
 		logger.debug('cleanup_leg')
-
-'''
-	def connect_inputs(self):
-
-        if self.input_matrix:
-            matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.leg_ctrl)
-
+		cmds.parent(self.toe_ik_control, self.controls_grp)
+		cmds.parent(self.fk_foot_skeleton[0], self.controls_grp)
+		cmds.parent(self.ik_foot_skeleton[0], self.toe_ik_control)
 		#cmds.parent(self.fk_foot_skeleton, self.input_grp)
 		#cmds.parent(self.ik_foot_skeleton, self.input_grp)
-'''
+
 '''
 import adv_scripting.rig.appendages.leg as leg
 il.reload(leg)
