@@ -15,6 +15,7 @@ il.reload(root)
 il.reload(spine)
 il.reload(leg)
 il.reload(arm)
+il.reload(hand)
 il.reload(rig_settings)
 
 logger = logging.getLogger(__name__)

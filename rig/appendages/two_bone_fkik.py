@@ -31,11 +31,13 @@ class TwoBoneFKIK(appendage.Appendage):
                  num_lowerTwist_joint,
                  side,
                  rotate_axis = 'rz',
+                 axis_orient = 1,
                  control_to_local_orient=False,
                  input_matrix=None):
         self.num_upperTwist_joints = num_upperTwist_joint
         self.num_lowerTwist_joints = num_lowerTwist_joint
         self.rotate_axis = rotate_axis
+        self.axis_orient = axis_orient
         self.control_to_local_orient = control_to_local_orient
         self.side = side
         self.appendage_name = appendage_name
@@ -82,7 +84,10 @@ class TwoBoneFKIK(appendage.Appendage):
         self.fk_controls = fk_setup(self.fk_skeleton)
 
         #IK setup
-        self.ik_controls = ik_setup(self.ik_skeleton, self.rotate_axis, self.control_to_local_orient)
+        self.ik_controls = ik_setup(self.ik_skeleton,
+                                    self.rotate_axis,
+                                    self.axis_orient,
+                                    self.control_to_local_orient)
 
         # Create blended output
          #TODO : twist joint blending
@@ -163,7 +168,7 @@ def fk_setup(fk_skeleton):
         side = str(joint_rn.side)
         element = str(joint_rn.element)
         region = str(joint_rn.region)
-        name_fk_control = rig_name.RigName(element=element, side=side, region=region,  control_type='fk', rig_type='ctrl', maya_type='controller')
+        name_fk_control = rig_name.RigName(element=element, side=side, region=region,  control_type='fk', rig_type='ctrl', maya_type='transform').output()
         fk_control = utils.create_fk_control(joint)
 
         fk_controls.append(fk_control)
@@ -176,7 +181,7 @@ def fk_setup(fk_skeleton):
     return fk_controls
 
 
-def ik_setup(ik_skeleton , rotate_axis, control_to_local_orient = False):
+def ik_setup(ik_skeleton, rotate_axis, axis_orient= 1, control_to_local_orient = False):
 
     root, root_rn = ik_skeleton[0]
     mid, mid_rn =  ik_skeleton[1]
@@ -185,9 +190,9 @@ def ik_setup(ik_skeleton , rotate_axis, control_to_local_orient = False):
     element = str(root_rn.element)
 
     #pole vector
-    cmds.setAttr(f'{mid}.{rotate_axis}',20)
+    cmds.setAttr(f'{mid}.{rotate_axis}', 20 * axis_orient)
     name_pv = rig_name.RigName(element=element, side=side,
-        control_type='ik', rig_type='pv', maya_type='controller')
+        control_type='ik', rig_type='pv', maya_type='transform').output()
     pv_position = pole_vector.calculate_pole_vector_position(root, mid, end)
     pv_control = cmds.createNode('transform', n=str(name_pv))
     # TODO: place pole vector with offsetParentMatrix
