@@ -205,7 +205,7 @@ class Spine(rap.Appendage):
         # Implement connect_inputs method here
 
         if self.input_matrix:
-            mt.matrix_parent_constraint(f'{self.input}.input_matrix', self.spine_fk_ls[-1])
+            mt.matrix_parent_constraint(f'{self.input}.input_matrix', 'driver_spine_bnd_jnt_01_fk_ctrl_transform')
 
 
     def connect_outputs(self):
