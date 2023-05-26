@@ -340,7 +340,7 @@ def create_group(node, parent=None, name=None, rig_type='grp'):
     if name:
         grp = cmds.createNode('transform', n=name)
     else:
-        grp_rn = rig_name.RigName(node).rename(rig_type=rig_type, maya_type='transform')
+        grp_rn = rig_name.RigName(node).rename(rig_type=rig_type)
         grp = cmds.createNode('transform', n=grp_rn.output())
     #logger.debug(f'Created group: {grp}')
     if parent:
@@ -721,9 +721,9 @@ def read_rotate(node, os=0):
 
 def read_scale(node, os=0):
     if os:
-        return cmds.xform(node, q=1, s=1, os=1) # object space
+        return cmds.xform(node, q=1, s=1, r=1, os=1) # object space
     else:
-        return cmds.xform(node, q=1, s=1, ws=1) # world space
+        return cmds.xform(node, q=1, s=1, r=1, ws=1) # world space
 
 def read_joint_orient(node):
     if cmds.objectType(node, isType='joint'):
