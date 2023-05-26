@@ -2,11 +2,16 @@
 exporter.py
 author: Dayz Lee
 
-Asset & Shot Exporter
+AnimExporter
 1. Animation Bake. Copy bnd skeleton to proxy skeleton. Bake animation from bnd to proxy.
     Get transforms on each joint at every frame.
-2. Animation Export. Get transform values and animation curves for all keys.
+2. Animation Export. Get keys and corresponding transform values, animation curves for each key.
     Also get camera data and camera keys.
+
+AnimImporter
+1. Animation Import. Import data file for given shot. Get keys and
+    corresponding transform values, animation curves for each key.
+2. Animation Bake. Import data file and bake to proxy.
 
 In Maya Script Editor, run:
 import adv_scripting.exporter as exporter
@@ -134,7 +139,7 @@ class AnimSetup():
 class AnimExporter(AnimSetup):
 
     def __init__(self, top_node, publish_data, anim_file):
-        AnimSetup.__init__(top_node, publish_data, anim_file)
+        AnimSetup.__init__(self, top_node, publish_data, anim_file)
 
         self.animation_bake()
         self.animation_export()
@@ -292,7 +297,7 @@ class AnimExporter(AnimSetup):
 class AnimImporter(AnimSetup):
 
     def __init__(self, top_node, publish_data, anim_file):
-        AnimSetup.__init__(top_node, publish_data, anim_file)
+        AnimSetup.__init__(self, top_node, publish_data, anim_file)
 
         # Import animation from data file
         self.animation_import()
@@ -374,11 +379,5 @@ def run():
         pdata.asset_name)
 
     # Initialize Exporter
-    #exporter = AnimExporter(rig.rig_grp, pdata.data, afile)
-    exporter = AnimExporter('test_skeleton', pdata.data, afile)
+    exporter = AnimExporter('Biped_grp', pdata.data, afile)
     return exporter
-
-    # TODO in biped.py add controls to top_node, e.g.
-    #cmds.addAttr(top_node, ln=ctrl_name, at='message')
-    #cmds.connectAttr(f'{ctrl_name}.message', f'{top_node}.{ctrl_name}')
-    #cmds.listConnections(top_node)
