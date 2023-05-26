@@ -23,11 +23,11 @@ class Spine(appendage.Appendage):
 
     def setup(self):
 
-        
+
         self.bnd_joints = dict()
         self.bnd_joints['start_joint'] = self.start_joint
         #print(self.bnd_joints)
-        
+
         # Get the selected joint
         selected_joint = self.start_joint
         child_joint = cmds.listRelatives(selected_joint, ad=True, type="joint")
@@ -43,39 +43,39 @@ class Spine(appendage.Appendage):
 
         # make list for ik, fk joints children
         dvchild_list = cmds.listRelatives(dv_root_joint, ad=True, type="joint")
-        
+
         children = cmds.listRelatives(selected_joint, c=True, type="joint")
 
         utils.delete_useless_joint(dv_root_joint, 'spine')
-        
+
         """
         (root, keyword)
         root : root joint for delete useless joints children
         keyword : Select keywords not to delete
         """
-                
-       
+
+
         ik_spine_joints = utils.copy_rename_joint_hierarchy(dv_root_joint, fk_prefix)
-        
+
         cmds.parent(ik_spine_joints, world=True)
         ik_spine_joints_list = cmds.ls(type='joint')
         ik_spine_joints_list = [joint for joint in ik_spine_joints_list if fk_prefix in joint]
-        
+
 
 
         # list for Unparent
         spine_joints_list = cmds.listRelatives(dv_root_joint, ad=True, type='joint')
         spine_joints_list.append(dv_root_joint)
-        
+
         bnd_joints_list = cmds.ls(type='joint')
         bnd_joints_list = [joint for joint in bnd_joints_list if 'spine_' in joint]
         bnd_joints_list = [joint for joint in bnd_joints_list if not fk_prefix or not dv_prefix in joint]
-        
+
         self.spine_joint_num = len(ik_spine_joints_list)
         if self.spine_joint_num > 0:
             for index in range(self.spine_joint_num):
                 self.bnd_joints[f'spine_{index+1}'] = bnd_joints_list[index]
-        
+
         print(self.bnd_joints)
         # Unparent each joint in the hierarchy
         cmds.parent(spine_joints_list, world=True)
@@ -182,7 +182,7 @@ class Spine(appendage.Appendage):
         fk_prefix = 'fk_follow_'
         self.fk_ctrl = dict()
         self.dv_ctrl = dict()
-        
+
         # Implement build method here
         spine_joints_list = cmds.ls(type='joint')
         spine_joints_list = [joint for joint in spine_joints_list if 'spine_' in joint]
@@ -228,15 +228,17 @@ class Spine(appendage.Appendage):
 
         for i in range(len(self.spine_dv_ls)):
             self.dv_ctrl[f'spine_dv_{i+1}'] = self.spine_dv_ls[i]
-            
+
             if i + 1 < len(self.spine_dv_ls):
                 cmds.parent(self.spine_dv_ls[i + 1], self.spine_dv_ls[i])
-                
-        print(self.fk_ctrl)        
+
+        print(self.fk_ctrl)
         print(self.dv_ctrl)
 
     def cleanup(self):
         cmds.parent(self.dv_ctrls, self.fk_ctrls, self.controls_grp)
+        self.controls['ik'] = self.fk_ctrl
+        self.controls['fk'] = self.dv_ctrl
 
     def connect_inputs(self):
         # Implement connect_inputs method here

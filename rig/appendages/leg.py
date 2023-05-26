@@ -103,7 +103,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		# Create a control for the fk ball joint and parent that control to the leg's fk control
 		# hierarchy.
 		self.ball_ctrl = utils.create_fk_control(self.fk_foot_skeleton[1][1].output(),
-                                                 parent_control=self.fk_controls[-1])
+                                                 parent_control=self.fk_controls['ctrl_2'])
 	def build_ik_foot(self):
 		logger.debug('build_ik_foot')
 
@@ -147,11 +147,11 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		cmds.parent(self.ball_ik_control, self.toe_ik_control)
 		cmds.parent(self.toe_ik_handle, self.toe_ik_control)
 		cmds.parent(self.ball_ik_handle, self.toe_ik_control)
-		print ('self.ik_controls[0]', self.ik_controls[0])
-		#TODO: This does nto seem to be parenting/
-		cmds.parent(self.toe_ik_control, self.ik_controls[0]
+		print ('self.ik_controls[0]', self.ik_controls['end_ctrl'])
+		#TODO: This does nto seem to be parenting
+		cmds.parent(self.toe_ik_control, self.ik_controls['end_ctrl'])
 
-		leg_ik_handle = cmds.listRelatives(self.ik_controls[0]
+		leg_ik_handle = cmds.listRelatives(self.ik_controls['end_ctrl'])
 		cmds.parent(leg_ik_handle[0], self.ball_ik_control)
 
 		cmds.pointConstraint(self.ik_skeleton[-1], self.ik_foot_skeleton[0])
@@ -173,7 +173,7 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 		logger.debug('connect_inputs')
 		print ('self.input', self.input)
 		if self.input_matrix:
-			matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.fk_controls[0])
+			matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.fk_controls['ctrl_0'])
 			matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.ik_skeleton[0][0])
 
 	def cleanup_leg(self):

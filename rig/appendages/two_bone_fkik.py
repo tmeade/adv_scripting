@@ -129,12 +129,14 @@ class TwoBoneFKIK(appendage.Appendage):
 
     def cleanup(self):
         # Parent the controls to the control group.
-        cmds.parent(self.fk_controls[0], self.controls_grp)
-        cmds.parent(self.ik_controls[0], self.controls_grp)
-        cmds.parent(self.ik_controls[1], self.controls_grp)
+        cmds.parent(self.fk_controls['ctrl_0'], self.controls_grp)
+        cmds.parent(self.ik_controls['end_ctrl'], self.controls_grp)
+        cmds.parent(self.ik_controls['pv_ctrl'], self.controls_grp)
         cmds.parent(self.fk_skeleton[0][0], self.controls_grp)
         cmds.parent(self.ik_skeleton[0][0], self.controls_grp)
         cmds.parent(self.FKIK_switch, self.controls_grp)
+
+        self.controls = {'fk': self.fk_controls, 'ik': self.ik_controls}
 
 
 def blend_skeleton(fk_joint, ik_joint, switch_attribute, element=None, side=None):
@@ -173,12 +175,14 @@ def fk_setup(fk_skeleton):
 
         fk_controls.append(fk_control)
 
+    fk_controls_dict = dict()
     for index in range(len(fk_controls)):
         if index != 0:
             cmds.parent(fk_controls[index], fk_controls[index-1])
             matrix_tools.matrix_parent_constraint(fk_controls[index-1], fk_controls[index])
+        fk_controls_dict[f'ctrl_{index}'] = fk_controls[index]
 
-    return fk_controls
+    return fk_controls_dict
 
 
 def ik_setup(ik_skeleton, rotate_axis, axis_orient= 1, control_to_local_orient = False):
@@ -222,7 +226,7 @@ def ik_setup(ik_skeleton, rotate_axis, axis_orient= 1, control_to_local_orient =
 
 
 
-    return ik_control, pv_control
+    return {'end_ctrl': ik_control, 'pv_ctrl': pv_control}
 
 '''
 import adv_scripting.rig.appendages.two_bone_fkik as twoB
