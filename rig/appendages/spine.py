@@ -209,4 +209,4 @@ class Spine(appendage.Appendage):
 
 
 # Maya Test
-spine = Spine("spine", "spine_bnd_jnt_01")
+#spine = Spine("spine", "spine_bnd_jnt_01")
