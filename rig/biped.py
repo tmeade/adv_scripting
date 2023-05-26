@@ -25,7 +25,9 @@ def tag_rig_node(rig_grp, name):
     cmds.addAttr(rig_grp, longName='AssetName', dt='string')
     cmds.addAttr(rig_grp, longName='RigVersion', dt='string')
 
+
 class Rig():
+
     def __init__(self, name, settings):
         self.name = name
         self.settings = settings
@@ -44,11 +46,9 @@ class Rig():
                                                         rig_type='grp'))
         tag_rig_node(self.rig_grp, self.name)
 
-        # TODO: add skelton grp
         self.skeleton_grp = cmds.createNode('transform', name=rig_name.RigName(
                                                         control_type = 'bnd',
                                                         rig_type='grp'))
-
         cmds.parent(self.settings.root_start_joint, self.skeleton_grp)
 
         self.global_control = cmds.createNode('transform', name=rig_name.RigName(
@@ -64,6 +64,7 @@ class Rig():
 
 
 class Biped(Rig):
+
     def __init__(self, name, settings=rig_settings.BipedSettings()):
         self.sides = [rig_name.Side('lt'), rig_name.Side('rt')]
         Rig.__init__(self, name, settings)
@@ -75,6 +76,28 @@ class Biped(Rig):
         self.build_head()
         self.build_arms()
         self.build_legs()
+
+    def connect_control_shapes(self):
+        # Add controls as message connections to rig_grp
+        controls = self.get_controls()
+        for control in controls:
+            cmds.addAttr(self.rig_grp, ln=control, at='message')
+            cmds.connectAttr(f'{control}.message', f'{self.rig_grp}.{control}')
+
+    def get_controls(self):
+        # Get controls from all appendages
+        appendages = [self.root, self.spine, self.head,
+            self.arms[self.sides[0]], self.arms[self.sides[1]],
+            self.legs[self.sides[0]], self.legs[self.sides[1]],
+            self.hands[self.sides[0]], self.hands[self.sides[1]]]
+
+        controls = list()
+        for appendage in appendages:
+            control_dict = appendage.controls
+            controls.expand(control_dict['fk'].values())
+            controls.expand(control_dict['ik'].values())
+            controls.expand(control_dict['switches'].values())
+        return controls
 
     def build_root(self):
         logger.debug('build_root')
