@@ -17,10 +17,17 @@ class Spine(appendage.Appendage):
     def __init__(self, appendage_name, start_joint, input_matrix=None):
         self.side = None
         self.element = None
+        self.spine_joint_num = 0
         appendage.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
+
 
     def setup(self):
 
+        
+        self.bnd_joints = dict()
+        self.bnd_joints['start_joint'] = self.start_joint
+        #print(self.bnd_joints)
+        
         # Get the selected joint
         selected_joint = self.start_joint
         child_joint = cmds.listRelatives(selected_joint, ad=True, type="joint")
@@ -36,26 +43,40 @@ class Spine(appendage.Appendage):
 
         # make list for ik, fk joints children
         dvchild_list = cmds.listRelatives(dv_root_joint, ad=True, type="joint")
-
+        
         children = cmds.listRelatives(selected_joint, c=True, type="joint")
 
         utils.delete_useless_joint(dv_root_joint, 'spine')
+        
         """
         (root, keyword)
         root : root joint for delete useless joints children
         keyword : Select keywords not to delete
         """
-
+                
+       
         ik_spine_joints = utils.copy_rename_joint_hierarchy(dv_root_joint, fk_prefix)
-
+        
         cmds.parent(ik_spine_joints, world=True)
         ik_spine_joints_list = cmds.ls(type='joint')
         ik_spine_joints_list = [joint for joint in ik_spine_joints_list if fk_prefix in joint]
+        
+
 
         # list for Unparent
         spine_joints_list = cmds.listRelatives(dv_root_joint, ad=True, type='joint')
         spine_joints_list.append(dv_root_joint)
-
+        
+        bnd_joints_list = cmds.ls(type='joint')
+        bnd_joints_list = [joint for joint in bnd_joints_list if 'spine_' in joint]
+        bnd_joints_list = [joint for joint in bnd_joints_list if not fk_prefix or not dv_prefix in joint]
+        
+        self.spine_joint_num = len(ik_spine_joints_list)
+        if self.spine_joint_num > 0:
+            for index in range(self.spine_joint_num):
+                self.bnd_joints[f'spine_{index+1}'] = bnd_joints_list[index]
+        
+        print(self.bnd_joints)
         # Unparent each joint in the hierarchy
         cmds.parent(spine_joints_list, world=True)
 
@@ -156,11 +177,12 @@ class Spine(appendage.Appendage):
         return
 
     def build(self):
-        
 
         dv_prefix = 'driver_'
         fk_prefix = 'fk_follow_'
-
+        self.fk_ctrl = dict()
+        self.dv_ctrl = dict()
+        
         # Implement build method here
         spine_joints_list = cmds.ls(type='joint')
         spine_joints_list = [joint for joint in spine_joints_list if 'spine_' in joint]
@@ -175,55 +197,58 @@ class Spine(appendage.Appendage):
 
         self.spine_dv_ls = []
         self.spine_fk_ls = []
-        
-        fk_ctrl_grp = rig_name.RigName(side=None,
-                                          element=self.appendage_name,
-                                          control_type='fk',
-                                          rig_type='ctrl',
-                                          maya_type='transform').output()
-        self.fk_ctrl_grp = cmds.createNode('transform', n=fk_ctrl_grp)
-        matrix_tools.snap_offset_parent_matrix(self.fk_ctrl_grp, follow_spine_joints_list[0])
-        
-        dv_ctrl_grp = rig_name.RigName(side=None,
-                                  element=self.appendage_name,
-                                  control_type='driver',
-                                  rig_type='ctrl',
-                                  maya_type='transform').output()
-        self.dv_ctrl_grp = cmds.createNode('transform', n=dv_ctrl_grp)
-        matrix_tools.snap_offset_parent_matrix(self.dv_ctrl_grp, dv_spine_joints_list[0])
-        
+
+        fk_ctrls = rig_name.RigName(side=None,
+                                    element=self.appendage_name,
+                                    control_type='fk',
+                                    rig_type='ctrl',
+                                    maya_type='transform').output()
+        self.fk_ctrls = cmds.createNode('transform', n=fk_ctrls)
+        matrix_tools.snap_offset_parent_matrix(self.fk_ctrls, follow_spine_joints_list[0])
+
+        dv_ctrls = rig_name.RigName(side=None,
+                                    element=self.appendage_name,
+                                    control_type='driver',
+                                    rig_type='ctrl',
+                                    maya_type='transform').output()
+        self.dv_ctrls = cmds.createNode('transform', n=dv_ctrls)
+        matrix_tools.snap_offset_parent_matrix(self.dv_ctrls, dv_spine_joints_list[0])
 
         for i, joint in enumerate(dv_spine_joints_list):
-            self.dv_spine_transform = utils.create_fk_control(dv_spine_joints_list[i], parent_control=self.dv_ctrl_grp)
+            self.dv_spine_transform = utils.create_fk_control(dv_spine_joints_list[i], parent_control=self.dv_ctrls)
             self.spine_dv_ls.append(self.dv_spine_transform)
 
         for i, joint in enumerate(spine_joints_list):
-            self.fk_spine_transform = utils.create_fk_control(spine_joints_list[i], parent_control=self.fk_ctrl_grp)
+            self.fk_spine_transform = utils.create_fk_control(spine_joints_list[i], parent_control=self.fk_ctrls)
             self.spine_fk_ls.append(self.fk_spine_transform)
+            self.fk_ctrl[f'spine_fk_{i+1}'] = self.spine_fk_ls[i]
 
         for btrans, ijoint in zip(self.spine_fk_ls, follow_spine_joints_list):
             matrix_tools.matrix_parent_constraint(ijoint, btrans)
 
         for i in range(len(self.spine_dv_ls)):
+            self.dv_ctrl[f'spine_dv_{i+1}'] = self.spine_dv_ls[i]
+            
             if i + 1 < len(self.spine_dv_ls):
                 cmds.parent(self.spine_dv_ls[i + 1], self.spine_dv_ls[i])
-
+                
+        print(self.fk_ctrl)        
+        print(self.dv_ctrl)
 
     def cleanup(self):
-        cmds.parent(self.dv_ctrl_grp, self.fk_ctrl_grp, self.controls_grp)
+        cmds.parent(self.dv_ctrls, self.fk_ctrls, self.controls_grp)
 
     def connect_inputs(self):
         # Implement connect_inputs method here
 
         if self.input_matrix:
             matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix',
-                                                  self.dv_ctrl_grp)
+                                                  self.dv_ctrls)
 
     def connect_outputs(self):
         # Implement connect_outputs method here
         # Connect the start matrix on the output node to the skeleton
         pass
-
 
 # Maya Test
 spine = Spine("spine", "spine_bnd_jnt_01")
