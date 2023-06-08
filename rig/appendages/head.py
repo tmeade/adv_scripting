@@ -34,10 +34,6 @@ class Head(rap.Appendage):
 
         self.bnd_joints['head_joint'] = self.skeleton[self.num_neck_joints + 1]
 
-        # Add a matrix attribute to represent each bnd joint on the output node
-        for joint_name in self.bnd_joints.keys():
-            cmds.addAttr(self.output, longName=f'{joint_name}_matrix', attributeType='matrix')
-
         logger.debug('self.bnd_joints: {} '.format(self.bnd_joints))
 
     def build(self):

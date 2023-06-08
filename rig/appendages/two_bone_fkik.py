@@ -75,9 +75,6 @@ class TwoBoneFKIK(appendage.Appendage):
                                                                 self.num_upperTwist_joints,
                                                                 self.num_lowerTwist_joints)
 
-        # Add a matrix attribute to represent each bnd joint on the output node
-        for joint_name in self.bnd_joints.keys():
-            cmds.addAttr(self.output, longName=f'{joint_name}_matrix', attributeType='matrix')
 
     def build(self):
         #FK setup
@@ -137,6 +134,7 @@ class TwoBoneFKIK(appendage.Appendage):
         cmds.parent(self.FKIK_switch, self.controls_grp)
 
         self.controls = {'fk': self.fk_controls, 'ik': self.ik_controls}
+        self.end_result = f'{self.output}.end_joint_matrix'
 
 
 def blend_skeleton(fk_joint, ik_joint, switch_attribute, element=None, side=None):

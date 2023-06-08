@@ -16,7 +16,7 @@ class Root(appendage.Appendage):
         appendage.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
 
     def setup(self):
-        cmds.addAttr(self.output, longName='root_joint_matrix', attributeType='matrix')
+        self.bnd_joints['root_joint'] = self.start_joint
 
     def build(self):
         # TODO: name should be more accessable.  The renaming utility is basing the rename on

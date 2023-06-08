@@ -22,6 +22,7 @@ class Appendage(ABC):
         self.appendage_name = appendage_name
         self.start_joint = start_joint
         self.input_matrix = input_matrix
+        self.bnd_joints = dict()
         self.controls = {'fk': {}, 'ik': {}, 'switches': {}}
         '''
         Example:
@@ -38,6 +39,7 @@ class Appendage(ABC):
         # Run methods
         self.create_appendage_container()
         self.setup()
+        self.create_output_attributes()
         self.build()
         self.connect_inputs()
         self.connect_outputs()
@@ -82,6 +84,18 @@ class Appendage(ABC):
         '''
         return
 
+    def create_output_attributes(self):
+        '''
+        Create matrix attributes on the appendage's output node for each of the joints in the
+        source skeleton.  Also add an attribute for the leaf-most world matrix of the appendage to
+        connect to other appendages.
+        '''
+        # Add a matrix attribute to represent each bnd joint on the output node
+        for joint_name in self.bnd_joints.keys():
+            cmds.addAttr(self.output, longName=f'{joint_name}_matrix', attributeType='matrix')
+
+        cmds.addAttr(self.output, longName='output_leaf_world_matrix', attributeType='matrix')
+
     @abstractmethod
     def build(self):
         '''
@@ -95,6 +109,7 @@ class Appendage(ABC):
         Connect the input matricies from the input node to the root control of the appendage.
         '''
         return
+
 
     @abstractmethod
     def connect_outputs(self):
