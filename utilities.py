@@ -252,8 +252,8 @@ def get_joint_twobone_default(jnt_list):
 def create_control_joints_from_skeleton(start_joint,
                                         end_joint,
                                         control_type,
-                                        num_upperTwist_joint,
-                                        num_lowerTwist_joint,
+                                        num_upperTwist_joint=0,
+                                        num_lowerTwist_joint=0,
                                         deleteTwist=True):
     '''
     Create control skeleton of control_type and
