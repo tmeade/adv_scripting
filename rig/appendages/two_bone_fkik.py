@@ -27,9 +27,9 @@ class TwoBoneFKIK(appendage.Appendage):
     def __init__(self,
                  appendage_name,
                  start_joint,
-                 num_upperTwist_joint,
-                 num_lowerTwist_joint,
                  side,
+                 num_upperTwist_joint=0,
+                 num_lowerTwist_joint=0,
                  rotate_axis = 'rz',
                  axis_orient = 1,
                  control_to_local_orient=False,
@@ -40,8 +40,8 @@ class TwoBoneFKIK(appendage.Appendage):
         self.axis_orient = axis_orient
         self.control_to_local_orient = control_to_local_orient
         self.side = side
-        self.appendage_name = appendage_name
-        appendage.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
+        self.appendage_name = f'{self.side}_{appendage_name}'
+        appendage.Appendage.__init__(self, self.appendage_name, start_joint, input_matrix)
 
     def setup(self):
         # {'start_joint': lt_upArm_bnd_10, 'upTwist_01':lt_upArm_bnd_jnt_04, 'midle_joint': 'lt_loArm'}
@@ -134,7 +134,7 @@ class TwoBoneFKIK(appendage.Appendage):
         cmds.parent(self.FKIK_switch, self.controls_grp)
 
         self.controls = {'fk': self.fk_controls, 'ik': self.ik_controls}
-        self.end_result = f'{self.output}.end_joint_matrix'
+        # self.end_result = f'{self.output}.end_joint_matrix'
 
 
 def blend_skeleton(fk_joint, ik_joint, switch_attribute, element=None, side=None):
