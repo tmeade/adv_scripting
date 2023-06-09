@@ -78,7 +78,7 @@ class Biped(Rig):
     def build(self):
         logger.debug('build')
         self.build_root()
-        # self.build_spine()
+        self.build_spine()
         self.build_head()
         self.build_arms()
         self.build_legs()
@@ -173,7 +173,7 @@ class Biped(Rig):
         self.head = head.Head(self.settings.head_appendage_name,
                                          rig_name.RigName(full_name=self.settings.head_start_joint).output(),
                                          self.settings.head_num_twist_joints,
-                                         input_matrix= None)#self.spine.controls['ik']['spine_fk_5'] + ".worldMatrix[0]")
+                                         input_matrix= self.spine.controls['ik']['spine_fk_5'] + ".worldMatrix[0]")
         cmds.parent(self.head.appendage_grp, self.rig_grp)
 
     def build_arms(self):
@@ -189,7 +189,7 @@ class Biped(Rig):
                                     side,
                                     self.settings.arm_num_upperTwist_joints,
                                     self.settings.arm_num_lowerTwist_joints,
-                                    input_matrix= None)#self.spine.controls['ik']['spine_fk_5'] + ".worldMatrix[0]")
+                                    input_matrix= self.spine.controls['ik']['spine_fk_5'] + ".worldMatrix[0]")
             cmds.parent(self.arms[side].appendage_grp, self.rig_grp)
             print ('self.arms[side].controls: ', self.arms[side].controls)
 
@@ -221,7 +221,6 @@ class Biped(Rig):
                                             side=side).output(),
                                         side,
                                         input_matrix = None)
-                                        # input_matrix = self.arms[side].end_result)
             cmds.parent(self.hands[side].appendage_grp, self.rig_grp)
 
 def build_biped(rig_settings):
