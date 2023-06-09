@@ -172,9 +172,9 @@ class Leg(two_bone_fkik.TwoBoneFKIK):
 	def connect_foot_inputs(self):
 		logger.debug('connect_inputs')
 		print ('self.input', self.input)
-		if self.input_matrix:
-			matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.fk_controls['ctrl_0'])
-			matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.ik_skeleton[0][0])
+		# if self.input_matrix:
+		# 	matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.fk_controls['ctrl_0'])
+		# 	matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.ik_skeleton[0][0])
 
 	def cleanup_leg(self):
 		logger.debug('cleanup_leg')

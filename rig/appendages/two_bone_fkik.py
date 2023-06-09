@@ -112,10 +112,15 @@ class TwoBoneFKIK(appendage.Appendage):
             cmds.xform(bnd_jnt, t = [0, 0, 0], os=True)
 
     def connect_inputs(self):
+        logger.debug('connect_inputs()')
         '''
         Connect the input matricies from the input node to the root control of the appendage.
         '''
-        return
+        if self.input_matrix:
+            matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix',
+                                                    self.fk_controls['ctrl_0'])
+            matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix',
+                                                    self.ik_skeleton[0][0])
 
     def connect_outputs(self):
         # Connect the start matrix on the output node to the skeleton
@@ -131,7 +136,8 @@ class TwoBoneFKIK(appendage.Appendage):
         cmds.parent(self.ik_controls['pv_ctrl'], self.controls_grp)
         cmds.parent(self.fk_skeleton[0][0], self.controls_grp)
         cmds.parent(self.ik_skeleton[0][0], self.controls_grp)
-        cmds.parent(self.FKIK_switch, self.controls_grp)
+        self.FKIK_switch = cmds.ls(self.FKIK_switch, uuid=True)[0]
+        cmds.parent(cmds.ls(self.FKIK_switch, uuid=True), self.controls_grp)
 
         self.controls = {'fk': self.fk_controls, 'ik': self.ik_controls}
         # self.end_result = f'{self.output}.end_joint_matrix'
