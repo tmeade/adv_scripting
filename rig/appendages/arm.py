@@ -62,6 +62,10 @@ class Arm(two_bone_fkik.TwoBoneFKIK):
         self.fk_controls['clavicle_ctrl'] = self.clavicle_control
 
     def connect_arm_output(self):
+        '''
+        Connects the matricies on the arm's output node to the offsetParentMatricies on the
+        source skeleton.
+        '''
         cmds.connectAttr(f'{self.output}.clavicle_matrix', f'{self.clavicle_joint}.offsetParentMatrix')
         matrix_tools.make_identity(self.clavicle_joint)
 

@@ -111,6 +111,7 @@ class TwoBoneFKIK(appendage.Appendage):
             cmds.connectAttr(mult_matrix_node + '.matrixSum', f'{self.output}.{key[0]}_matrix')
             cmds.xform(bnd_jnt, t = [0, 0, 0], os=True)
 
+
     def connect_inputs(self):
         logger.debug('connect_inputs()')
         '''
@@ -140,7 +141,11 @@ class TwoBoneFKIK(appendage.Appendage):
         cmds.parent(cmds.ls(self.FKIK_switch, uuid=True), self.controls_grp)
 
         self.controls = {'fk': self.fk_controls, 'ik': self.ik_controls}
-        # self.end_result = f'{self.output}.end_joint_matrix'
+
+        # Dig out the blendMatrix node from the end joint and connect it to the output_leaf_world_matrix
+        mult = cmds.listConnections(f'{self.output}.end_joint_matrix', s=True, type='multMatrix')[0]
+        plug = cmds.listConnections(mult, s=True, type='blendMatrix', plugs=True)[0]
+        cmds.connectAttr(plug, f'{self.output}.output_leaf_world_matrix')
 
 
 def blend_skeleton(fk_joint, ik_joint, switch_attribute, element=None, side=None):

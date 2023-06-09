@@ -1,29 +1,29 @@
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
-import adv_scripting.rig_name as rn
+import adv_scripting.rig_name as rig_name
 import adv_scripting.matrix_tools as matrix_tools
-import adv_scripting.rig.appendages.appendage as rap
+import adv_scripting.rig.appendages.appendage as appendage
 import adv_scripting.utilities as utils
 import logging
 import pymel.core as pm
 logger = logging.getLogger(__name__)
 
 import importlib as il
-il.reload(rap)
+il.reload(appendage)
 il.reload(matrix_tools)
 il.reload(utils)
 
 
 
 
-class Head(rap.Appendage):
+class Head(appendage.Appendage):
     def __init__(   self,
                     appendage_name,
                     start_joint,
                     num_neck_joints,
                     input_matrix=None):
         self.num_neck_joints = num_neck_joints
-        rap.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
+        appendage.Appendage.__init__(self, appendage_name, start_joint, input_matrix)
 
     def setup(self):
         self.bnd_joints = dict()
@@ -43,6 +43,7 @@ class Head(rap.Appendage):
         self.head_ctrl = utils.create_fk_control(self.bnd_joints['head_joint'],
                                                 connect_output=f'{self.output}.head_joint_matrix',
                                                 parent_control=self.neck_control)
+
     def connect_inputs(self):
         '''
         Connect the input matricies from the input node to the root control of the appendage.
@@ -59,5 +60,8 @@ class Head(rap.Appendage):
 
 
     def cleanup(self):
+        # The head_ctrl is the leaf most result of the root appendage so plug it into the output
+        # node.
+        cmds.connectAttr(f'{self.head_ctrl}.worldMatrix[0]', f'{self.output}.output_leaf_world_matrix')
         # Parent the controls to the control group.
         cmds.parent(self.neck_control, self.controls_grp)

@@ -62,14 +62,16 @@ class Appendage(ABC):
         self.controls_grp = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='controls',
                                                         rig_type='grp').output())
-        self.input = cmds.createNode('transform', name=rig_name.RigName(
+        self._input = cmds.ls(cmds.createNode('transform', name=rig_name.RigName(
                                                         element='input',
-                                                        rig_type='grp').output())
+                                                        rig_type='grp').output()),
+                                                        uuid=True)[0]
         cmds.addAttr(self.input, longName='input_matrix', attributeType='matrix')
 
-        self.output = cmds.createNode('transform', name=rig_name.RigName(
+        self._output = cmds.ls(cmds.createNode('transform', name=rig_name.RigName(
                                                         element='output',
-                                                        rig_type='grp').output())
+                                                        rig_type='grp').output()),
+                                                        uuid=True)[0]
         if self.input_matrix:
             cmds.connectAttr(self.input_matrix, f'{self.input}.input_matrix')
 
@@ -114,11 +116,11 @@ class Appendage(ABC):
         '''
         return
 
-
     @abstractmethod
     def connect_outputs(self):
         '''
-        Connect the ouput matricies to their corresponding joints in the source skeleton
+        Connect the ouput matricies to their corresponding joints in the source skeleton.  Disabling
+        this method will allow the rig to be built without a connection to the skelton.
         '''
         return
 
@@ -133,6 +135,18 @@ class Appendage(ABC):
         cmds.parent(self.controls_grp, self.appendage_grp)
         self.controls_grp = cmds.listRelatives(self.appendage_grp, f=True)[-1]
         cmds.parent(self.input, self.appendage_grp)
-        self.input = cmds.listRelatives(self.appendage_grp, f=True)[-1]
         cmds.parent(self.output, self.appendage_grp)
-        self.output = cmds.listRelatives(self.appendage_grp, f=True)[-1]
+
+    @property
+    def input(self):
+        return cmds.ls(self._input, uuid=True, l=True)[0]
+        logger.info(f'input: {self.input}')
+
+    @property
+    def output(self):
+        return cmds.ls(self._output, uuid=True, l=True)[0]
+        logger.info(f'output: {self.output}')
+
+    @property
+    def result_matrix(self):
+        return f'{self.output}.output_leaf_world_matrix'

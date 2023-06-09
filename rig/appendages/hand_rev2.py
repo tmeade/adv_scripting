@@ -1,13 +1,10 @@
 import maya.cmds as cmds
 import adv_scripting.rig_name as rig_name
-import adv_scripting.utilities as utils
 import adv_scripting.matrix_tools as matrix_tools
 import adv_scripting.rig.appendages.appendage as appendage
 import adv_scripting.rig.appendages.finger as finger
 import logging
-import copy
 import importlib as il
-il.reload(utils)
 il.reload(finger)
 il.reload(appendage)
 
@@ -66,11 +63,8 @@ class Hand(appendage.Appendage):
                                                                 control_type='switch',
                                                                 rig_type=rig_name.RigType('ctrl'),
                                                                 maya_type='transform'))
-        matrix_tools.snap_offset_parent_matrix(self.hand_control, self.start_joint)
-        #Constrain control to hand joint so that is follows the rig.
-        matrix_tools.matrix_parent_constraint(self.start_joint, self.hand_control)
-
         logger.debug(f'self.hand_control: {self.hand_control}')
+        matrix_tools.snap_offset_parent_matrix(self.hand_control, self.start_joint)
 
         # Create a finger instance for each of the finger_roots and connect them to the hand control.
         for index, root in enumerate(self.finger_roots):
@@ -78,6 +72,7 @@ class Hand(appendage.Appendage):
                                             root,
                                             self.side,
                                             input_matrix=f'{self.hand_control}.worldMatrix[0]')
+
             # Add bnd joints and controls from each finger to the hand's bnd_jnt and controls data.
             self.bnd_joints[f'finger_0{index+1}'] = finger_appendage.bnd_joints
             self.controls[f'finger_0{index+1}'] = finger_appendage.controls
@@ -93,15 +88,18 @@ class Hand(appendage.Appendage):
             cmds.connectAttr(f'{finger_appendage.input}.finger_0{index+1}_FKIK',
                             f'{switch_node}.FKIK')
 
+            # Parent the finger appendage group to the hand's appendage group to keep the scene
+            # organized.
             cmds.parent(finger_appendage.appendage_grp, self.appendage_grp)
 
-        logger.debug(f'self.bnd_joints: {self.bnd_joints}')
+        logger.debug(f'hand.bnd_joints: {self.bnd_joints}')
 
     def connect_inputs(self):
         '''
-        The inputs have been connected inside of the loop in the build() method.
+        Connect the input_matrix to the hand control to drive the hand appendage from parent.
         '''
-        pass
+        if self.input_matrix:
+            matrix_tools.matrix_parent_constraint(f'{self.input}.input_matrix', self.hand_control)
 
     def connect_outputs(self):
         '''

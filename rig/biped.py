@@ -58,6 +58,7 @@ class Rig():
                                                         rig_type='grp'))
         cmds.parent(self.controls_grp, self.rig_grp)
 
+        # TODO: global control should inherit from appendage.
         self.global_control = cmds.createNode('transform', name=rig_name.RigName(
                                                         element='main',
                                                         rig_type='ctrl'))
@@ -164,9 +165,8 @@ class Biped(Rig):
         logger.debug('build_spine')
         self.spine = spine.Spine(self.settings.spine_appendage_name,
                                  rig_name.RigName(full_name=self.settings.spine_start_joint).output(),
-                                 input_matrix= self.root.controls['fk']['root'] + ".worldMatrix[0]")
+                                 input_matrix= self.root.result_matrix)
         cmds.parent(self.spine.appendage_grp, self.rig_grp)
-        print('***self.spine.controls', self.spine.controls)
 
     def build_head(self):
         logger.debug('build_head')
@@ -191,7 +191,6 @@ class Biped(Rig):
                                     self.settings.arm_num_lowerTwist_joints,
                                     input_matrix= self.spine.controls['ik']['spine_fk_5'] + ".worldMatrix[0]")
             cmds.parent(self.arms[side].appendage_grp, self.rig_grp)
-            print ('self.arms[side].controls: ', self.arms[side].controls)
 
     def build_legs(self):
         logger.debug('build_legs')
@@ -207,7 +206,7 @@ class Biped(Rig):
                                     side,
                                     self.settings.leg_num_upperTwist_joints,
                                     self.settings.leg_num_lowerTwist_joints,
-                                    input_matrix = self.root.controls['fk']['root'] + ".worldMatrix[0]")
+                                    input_matrix = self.root.result_matrix)
 
             cmds.parent(self.legs[side].appendage_grp, self.rig_grp)
 
@@ -220,7 +219,7 @@ class Biped(Rig):
                                             full_name=self.settings.hand_start_joint).rename(
                                             side=side).output(),
                                         side,
-                                        input_matrix = None)
+                                        input_matrix = self.arms[side].result_matrix)
             cmds.parent(self.hands[side].appendage_grp, self.rig_grp)
 
 def build_biped(rig_settings):

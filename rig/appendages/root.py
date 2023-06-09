@@ -27,6 +27,9 @@ class Root(appendage.Appendage):
         #                    maya_type='transform'))
         self.root_ctrl = utils.create_fk_control(self.start_joint,
                                                  connect_output=f'{self.output}.root_joint_matrix')
+        # The root_ctrl is the leaf most result of the root appendage so plug it into the output
+        # node.
+        cmds.connectAttr(f'{self.root_ctrl}.worldMatrix[0]', f'{self.output}.output_leaf_world_matrix')
 
     def connect_inputs(self):
         if self.input_matrix:
