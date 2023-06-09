@@ -24,7 +24,9 @@ class Finger(two_bone_fkik.TwoBoneFKIK):
                                             side,
                                             control_to_local_orient=True,
                                             input_matrix=input_matrix)
+
         self.cleanup_finger()
+
 
     def cleanup_finger(self):
         pass

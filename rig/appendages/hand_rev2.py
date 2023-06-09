@@ -60,24 +60,55 @@ class Hand(appendage.Appendage):
         logger.debug(f'self.finger_roots: {self.finger_roots}')
 
     def build(self):
+        self.hand_control = cmds.createNode('transform',
+                                            n=rig_name.RigName( side=self.side,
+                                                                element='hand',
+                                                                control_type='switch',
+                                                                rig_type=rig_name.RigType('ctrl'),
+                                                                maya_type='transform'))
+        matrix_tools.snap_offset_parent_matrix(self.hand_control, self.start_joint)
+        #Constrain control to hand joint so that is follows the rig.
+        matrix_tools.matrix_parent_constraint(self.start_joint, self.hand_control)
+
+        logger.debug(f'self.hand_control: {self.hand_control}')
+
+        # Create a finger instance for each of the finger_roots and connect them to the hand control.
         for index, root in enumerate(self.finger_roots):
-            finger_appendage = finger.Finger(f'finger_0{index+1}', root, self.side)
+            finger_appendage = finger.Finger(f'finger_0{index+1}',
+                                            root,
+                                            self.side,
+                                            input_matrix=f'{self.hand_control}.worldMatrix[0]')
+            # Add bnd joints and controls from each finger to the hand's bnd_jnt and controls data.
             self.bnd_joints[f'finger_0{index+1}'] = finger_appendage.bnd_joints
+            self.controls[f'finger_0{index+1}'] = finger_appendage.controls
+
+            # Create switch attributes on the hand control for each finger and route them though the
+            # input node.
+            switch_node = cmds.ls(finger_appendage.FKIK_switch, uuid=True, l=True)[0]
+            cmds.addAttr(self.hand_control, longName=f'finger_0{index+1}_FKIK', at='double', max=1, min=0)
+            cmds.addAttr(finger_appendage.input, longName=f'finger_0{index+1}_FKIK', at='double', max=1, min=0)
+
+            cmds.connectAttr(f'{self.hand_control}.finger_0{index+1}_FKIK',
+                            f'{finger_appendage.input}.finger_0{index+1}_FKIK')
+            cmds.connectAttr(f'{finger_appendage.input}.finger_0{index+1}_FKIK',
+                            f'{switch_node}.FKIK')
+
             cmds.parent(finger_appendage.appendage_grp, self.appendage_grp)
 
         logger.debug(f'self.bnd_joints: {self.bnd_joints}')
 
     def connect_inputs(self):
         '''
-        Connect the input matricies from the input node to the root control of the appendage.
+        The inputs have been connected inside of the loop in the build() method.
         '''
-        return
+        pass
 
     def connect_outputs(self):
         '''
-        Connect the ouput matricies to their corresponding joints in the source skeleton
+        The hand control is not used to directly transform any nodes and does not have any direct
+        connections from the output.  All joints are being controled from the finger outputs.
         '''
-        return
+        pass
 
     def cleanup(self):
         '''
