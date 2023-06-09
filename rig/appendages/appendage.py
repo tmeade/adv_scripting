@@ -90,11 +90,15 @@ class Appendage(ABC):
         source skeleton.  Also add an attribute for the leaf-most world matrix of the appendage to
         connect to other appendages.
         '''
+        # Add a matrix attribute that holds the end/leaf most world space matrix of the appendage.
+        # This will be what other child appendages can connect to.
+        cmds.addAttr(self.output, longName='output_leaf_world_matrix', attributeType='matrix')
         # Add a matrix attribute to represent each bnd joint on the output node
         for joint_name in self.bnd_joints.keys():
             cmds.addAttr(self.output, longName=f'{joint_name}_matrix', attributeType='matrix')
 
-        cmds.addAttr(self.output, longName='output_leaf_world_matrix', attributeType='matrix')
+            logger.debug(f'Added {joint_name}_matrix attribute to {self.output}')
+
 
     @abstractmethod
     def build(self):
