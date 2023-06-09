@@ -78,7 +78,7 @@ def matrix_parent_constraint(driver, driven, connect_output=None):
         mc.connectAttr(f'{mult_matrix_node}.matrixSum', f'{driven}.offsetParentMatrix')
         make_identity(driven)
 
-    return offset_matrix
+    return mult_matrix_node
 
 def make_identity(transform):
     '''
